@@ -4,6 +4,7 @@
 #' @importFrom R6 R6Class
 #' @importFrom uuid UUIDgenerate
 #' @importFrom methods is
+#' @importFrom tmle3 Param_base
 #' @family Parameters
 #' @keywords data
 #'
@@ -41,70 +42,58 @@
 #' }
 #' @export
 Param_ATE <- R6Class(
-  classname = "Param_ATE",
+  classname = "Param_TR",
   portable = TRUE,
   class = TRUE,
   inherit = Param_base,
   public = list(
-    initialize = function(observed_likelihood, onsite = "1", offsite = "0",
+    initialize = function(observed_likelihood, observed_likelihood_onsite, 
+                          onsite = 1, offsite = 0,
                           ...,
                           covariate_node = "W", site_node = "A", outcome_node = "Y") {
       super$initialize(observed_likelihood, ..., outcome_node = outcome_node)
-      private$.covariate_node <- covariate_node
-      private$.site_node <- site_node
+      private$.observed_likelihood_onsite <- observed_likelihood_onsite
       private$.onsite <- onsite
       private$.offsite <- offsite
+      private$.covariate_node <- covariate_node
+      private$.site_node <- site_node
       private$.cf_likelihood_onsite <- make_CF_Likelihood(observed_likelihood, define_lf(LF_static, self$site_node, value = self$onsite))
       private$.cf_likelihood_offsite <- make_CF_Likelihood(observed_likelihood, define_lf(LF_static, self$site_node, value = self$offsite))
-      
     },
     clever_covariates = function(tmle_task = NULL, fold_number = "full") {
+      training_task <- self$observed_likelihood$training_task
       if (is.null(tmle_task)) {
         tmle_task <- self$observed_likelihood$training_task
       }
       
-      cf_pS_onsite <- self$cf_likelihood_onsite$get_likelihoods(tmle_task, self$site_node, fold_number)
-      #cf_pS_offsite <- self$cf_likelihood_offsite$get_likelihoods(tmle_task, self$site_node, fold_number)
+      I1 <- self$cf_likelihood_onsite$get_likelihoods(tmle_task, self$site_node, fold_number)
+      p0 <- mean(self$observed_likelihood$get_likelihood(training_task, self$site_node, fold_number))
       
       cf_task_onsite <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(A = rep(self$onsite, tmle_task$nrow)))
       cf_task_offsite <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(A = rep(self$offsite, tmle_task$nrow)))
       p1W <- self$observed_likelihood$get_likelihood(cf_task_onsite, self$site_node, fold_number)
       p0W <- self$observed_likelihood$get_likelihood(cf_task_offsite, self$site_node, fold_number)
       
-      p0 <- mean(p0W)
-      HA <- cf_pS_onsite / p1W * p0W / p0
+      H1 <- I1 / p1W * p0W / p0
       
-      return(list(Y = HA))
+      return(list(Y = H1))
     },
     estimates = function(tmle_task = NULL, fold_number = "full") {
+      training_task <- self$observed_likelihood$training_task
       if (is.null(tmle_task)) {
         tmle_task <- self$observed_likelihood$training_task
       }
       
-      intervention_nodes <- union(names(self$intervention_list_treatment), names(self$intervention_list_control))
-      
       # clever_covariates happen here (for this param) only, but this is repeated computation
-      HA <- self$clever_covariates(tmle_task, fold_number)[[self$outcome_node]]
-      
-      
-      # todo: make sure we support updating these params
-      pA <- self$observed_likelihood$get_likelihoods(tmle_task, intervention_nodes, fold_number)
-      cf_pA_treatment <- self$cf_likelihood_treatment$get_likelihoods(tmle_task, intervention_nodes, fold_number)
-      cf_pA_control <- self$cf_likelihood_control$get_likelihoods(tmle_task, intervention_nodes, fold_number)
-      
-      # todo: extend for stochastic
-      cf_task_treatment <- self$cf_likelihood_treatment$enumerate_cf_tasks(tmle_task)[[1]]
-      cf_task_control <- self$cf_likelihood_control$enumerate_cf_tasks(tmle_task)[[1]]
-      
+      H1 <- self$clever_covariates(tmle_task, fold_number)[[self$outcome_node]]
       Y <- tmle_task$get_tmle_node(self$outcome_node, impute_censoring = TRUE)
+      EY <- self$observed_likelihood_onsite$get_likelihood(tmle_task, self$outcome_node, fold_number)
+      I0 <- self$cf_likelihood_offsite$get_likelihoods(tmle_task, self$site_node, fold_number)
+      p0 <- mean(self$observed_likelihood$get_likelihood(training_task, self$site_node, fold_number))
       
-      EY <- self$observed_likelihood$get_likelihood(tmle_task, self$outcome_node, fold_number)
-      EY1 <- self$observed_likelihood$get_likelihood(cf_task_treatment, self$outcome_node, fold_number)
-      EY0 <- self$observed_likelihood$get_likelihood(cf_task_control, self$outcome_node, fold_number)
+      psi <- mean(I0/p0 * EY)
       
-      psi <- mean(EY1 - EY0)
-      
-      IC <- HA * (Y - EY) + (EY1 - EY0) - psi
+      IC <- H1 * (Y - EY) + I0/p0 * EY - psi
       
       result <- list(psi = psi, IC = IC)
       return(result)
@@ -112,8 +101,11 @@ Param_ATE <- R6Class(
   ),
   active = list(
     name = function() {
-      param_form <- sprintf("ATE[%s_{%s}-%s_{%s}]", self$outcome_node, self$cf_likelihood_treatment$name, self$outcome_node, self$cf_likelihood_control$name)
+      param_form <- sprintf("E[E(%s | %s, trial) | reality]", self$outcome_node, self$covariate_node)
       return(param_form)
+    },
+    observed_likelihood_onsite = function() {
+      return(private$.observed_likelihood_onsite)
     },
     covariate_node = function() {
       return(private$.covariate_node)
@@ -121,10 +113,27 @@ Param_ATE <- R6Class(
     site_node = function() {
       return(private$.site_node)
     },
+    onsite = function() {
+      return(private$.onsite)
+    },
+    offsite = function() {
+      return(private$.offsite)
+    },
+    cf_likelihood_onsite = function() {
+      return(private$.cf_likelihood_onsite)
+    },
+    cf_likelihood_offsite = function() {
+      return(private$.cf_likelihood_offsite)
+    },
   ),
   private = list(
-    .type = "ATE",
+    .type = "TMLE_TR",
+    .observed_likelihood_onsite = NULL,
     .covariate_node = NULL,
-    .site_node = NULL
+    .site_node = NULL,
+    .onsite = NULL,
+    .offsite = NULL,
+    .cf_likelihood_onsite = NULL,
+    .cf_likelihood_offsite = NULL
   )
 )
