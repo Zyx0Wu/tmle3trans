@@ -42,7 +42,7 @@ LF_fit_site <- R6Class(
     initialize = function(name, learner, ..., site = 1, site_node = "A", type = "density") {
       super$initialize(name, learner, ..., type = type)
       private$.site <- site
-      private$.site_name <- site_name
+      private$.site_node <- site_node
     },
     delayed_train = function(tmle_task) {
       # just return prefit learner if that's what we have
@@ -55,7 +55,7 @@ LF_fit_site <- R6Class(
       
       # fit scaled task for bounded continuous
       site_data <- tmle_task$get_tmle_node(self$site_node)
-      tmle_task_site <- tmle_task$subset_task(site_data == site)
+      tmle_task_site <- tmle_task$subset_task(site_data == self$site)
       learner_task_site <- tmle_task_site$get_regression_task(outcome_node, scale = TRUE, drop_censored = TRUE)
       learner_fit <- delayed_learner_train(self$learner, learner_task_site)
       return(learner_fit)
@@ -65,12 +65,12 @@ LF_fit_site <- R6Class(
     site = function() {
       return(private$.site)
     },
-    site_name = function() {
-      return(private$.site_name)
+    site_node = function() {
+      return(private$.site_node)
     }
   ),
   private = list(
     .site = NULL,
-    .site_name = NULL
+    .site_node = NULL
   )
 )

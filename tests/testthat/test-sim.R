@@ -41,7 +41,7 @@ psi_1 = function(b) mean(W == b & A == 1)
 psi_2 = function(b) mean((W == b & A == 1) * Y)
 psi_s = mean(A == 0)
 
-f = sum(sapply(levels(factor(W)), function(b) psi_0 / psi_s * psi_2 / psi_1))
+f = sum(sapply(levels(factor(W)), function(b) psi_0(b) / psi_s * psi_2(b) / psi_1(b)))
 
 ### 2. TMLE ###
 # define update method (submodel + loss function)
@@ -50,12 +50,10 @@ updater <- tmle3_Update$new(cvtmle = FALSE, convergence_type = "sample_size")
 targeted_likelihood <- Targeted_Likelihood$new(initial_likelihood, updater)
 
 # define parameter
-tmle_params <- tmle_spec$make_params(targeted_likelihood)
-updater$tmle_params <- tmle_params
-TR <- tmle_params[[1]]
+tmle_param <- tmle_spec$make_params(tmle_task, targeted_likelihood)
 
 # fit
-tmle_fit <- fit_tmle3(tmle_task, targeted_likelihood, list(TR), updater)
+tmle_fit <- fit_tmle3(tmle_task, targeted_likelihood, tmle_param, updater)
 
 # extract results
 tmle_summary <- tmle_fit$summary
