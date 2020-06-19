@@ -16,7 +16,7 @@ W <- c(2,2,3,4,2,3,5,6,7,8)
 A <- c(1,1,1,1,0,0,0,0,0,0)
 Y <- c(3,9,8,1,2,4,5,6,7,0)
 '
-set.seed(1234)
+#set.seed(1234)
 n <- 1000
 W <- sample(1:4, n, replace=TRUE, prob=c(0.1, 0.2, 0.65, 0.05))
 A <- rbinom(n, 1, expit(1.4 - 0.6 * W))
@@ -82,3 +82,5 @@ test_that("psi results match", {
 test_that("se results match", {
   expect_equal(tmle_se, sd, tol = tol)
 })
+
+est >= tmle_summary$lower && est <= tmle_summary$upper
