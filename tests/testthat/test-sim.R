@@ -11,20 +11,28 @@ library(future)
 # note: S <=> A, site variable
 
 # generate data
+'
+W <- c(2,2,3,4,2,3,5,6,7,8)
+A <- c(1,1,1,1,0,0,0,0,0,0)
+Y <- c(3,9,8,1,2,4,5,6,7,0)
+'
 set.seed(1234)
 n <- 1000
 W <- sample(1:4, n, replace=TRUE, prob=c(0.1, 0.2, 0.65, 0.05))
 A <- rbinom(n, 1, expit(1.4 - 0.6 * W))
-#Y <- rnorm(n, 1 + .5 * W * sin(W + 8) + .2 * sqrt(abs(-W^3 + exp(W))), .4)
 Y <- rnorm(n, 2 + .5 * W, 1)
 
-data <- data.table(W, A, Y)
+# estimation of truth
+est = mean((A == 0) * Y)/mean(A == 0)
+
+# data
+data <- data.table(W=factor(W), A=factor(A), Y)
 node_list <- list(W = "W", A = "A", Y = "Y")
 
 tmle_spec <- tmle_TR(1, 0)
 tmle_task <- tmle_spec$make_tmle_task(data, node_list)
 
-lrnr_glm <- make_learner(Lrnr_glm_fast)
+lrnr_glm <- make_learner(Lrnr_glm)
 learner_list <- list(Y = lrnr_glm, A = lrnr_glm)
 
 factor_list <- list(
@@ -41,7 +49,12 @@ psi_1 = function(b) mean(W == b & A == 1)
 psi_2 = function(b) mean((W == b & A == 1) * Y)
 psi_s = mean(A == 0)
 
-f = sum(sapply(levels(factor(W)), function(b) psi_0(b) / psi_s * psi_2(b) / psi_1(b)))
+f_n = sum(sapply(levels(factor(W)),
+               function(b) psi_0(b)/psi_s * psi_2(b)/ifelse(psi_1(b), psi_1(b), 1)))
+D_n = rowSums(sapply(levels(factor(W)),
+                     function(b) (psi_0(b) * (W == b & A == 1))/(psi_s * ifelse(psi_1(b), psi_1(b), 1)) * (Y - psi_2(b)/ifelse(psi_1(b), psi_1(b), 1)) +
+                       (W == b & A == 0)/psi_s * (psi_2(b)/ifelse(psi_1(b), psi_1(b), 1) - f_n)))
+sd = sd(D_n) / sqrt(n)
 
 ### 2. TMLE ###
 # define update method (submodel + loss function)
@@ -60,3 +73,12 @@ tmle_summary <- tmle_fit$summary
 tmle_psi <- tmle_summary$tmle_est
 tmle_se <- tmle_summary$se
 tmle_epsilon <- updater$epsilons[[1]]$Y
+
+### tests ###
+tol <- 1 / sqrt(n)
+test_that("psi results match", {
+  expect_equal(tmle_psi, f_n, tol = tol)
+})
+test_that("se results match", {
+  expect_equal(tmle_se, sd, tol = tol)
+})

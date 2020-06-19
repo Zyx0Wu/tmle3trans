@@ -65,7 +65,9 @@ Param_TR <- R6Class(
       }
 
       I1 <- self$cf_likelihood_onsite$get_likelihoods(tmle_task, self$site_node, fold_number)
-      p0 <- mean(self$observed_likelihood$get_likelihood(training_task, self$site_node, fold_number))
+
+      cf_train_offsite <- training_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(A = rep(self$offsite, training_task$nrow)))
+      p0 <- mean(self$observed_likelihood$get_likelihood(cf_train_offsite, self$site_node, fold_number))
 
       cf_task_onsite <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(A = rep(self$onsite, tmle_task$nrow)))
       cf_task_offsite <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(A = rep(self$offsite, tmle_task$nrow)))
@@ -85,13 +87,18 @@ Param_TR <- R6Class(
       # clever_covariates happen here (for this param) only, but this is repeated computation
       H1 <- self$clever_covariates(tmle_task, fold_number)[[self$outcome_node]]
       Y <- tmle_task$get_tmle_node(self$outcome_node, impute_censoring = TRUE)
-      EY <- self$observed_likelihood$get_likelihood(tmle_task, self$outcome_node, fold_number)
+      EYA <- self$observed_likelihood$get_likelihood(tmle_task, self$outcome_node, fold_number)
       I0 <- self$cf_likelihood_offsite$get_likelihoods(tmle_task, self$site_node, fold_number)
-      p0 <- mean(self$observed_likelihood$get_likelihood(training_task, self$site_node, fold_number))
 
-      psi <- mean(I0/p0 * EY)
+      cf_task_onsite <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(A = rep(self$onsite, tmle_task$nrow)))
+      EY1 <- self$observed_likelihood$get_likelihood(cf_task_onsite, self$outcome_node, fold_number)
 
-      IC <- H1 * (Y - EY) + I0/p0 * EY - psi
+      cf_train_offsite <- training_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(A = rep(self$offsite, training_task$nrow)))
+      p0 <- mean(self$observed_likelihood$get_likelihood(cf_train_offsite, self$site_node, fold_number))
+
+      psi <- mean(I0/p0 * EY1)
+
+      IC <- H1 * (Y - EYA) + I0/p0 * (EY1 - psi)
 
       result <- list(psi = psi, IC = IC)
       return(result)
