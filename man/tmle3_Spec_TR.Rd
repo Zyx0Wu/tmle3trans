@@ -31,6 +31,7 @@ Defines a TMLE with site transportation
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-new"></a>}}
+\if{latex}{\out{\hypertarget{method-new}{}}}
 \subsection{Method \code{new()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{tmle3_Spec_TR$new(onsite = 1, offsite = 0, ...)}\if{html}{\out{</div>}}
@@ -39,6 +40,7 @@ Defines a TMLE with site transportation
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-make_params"></a>}}
+\if{latex}{\out{\hypertarget{method-make_params}{}}}
 \subsection{Method \code{make_params()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{tmle3_Spec_TR$make_params(tmle_task, targeted_likelihood)}\if{html}{\out{</div>}}
@@ -47,6 +49,7 @@ Defines a TMLE with site transportation
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{

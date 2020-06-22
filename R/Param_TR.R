@@ -4,7 +4,7 @@
 #' @importFrom R6 R6Class
 #' @importFrom uuid UUIDgenerate
 #' @importFrom methods is
-#' @importFrom tmle3 Param_base
+#' @importFrom tmle3 Param_base define_lf make_CF_Likelihood
 #' @family Parameters
 #' @keywords data
 #'
@@ -86,7 +86,7 @@ Param_TR <- R6Class(
 
       # clever_covariates happen here (for this param) only, but this is repeated computation
       H1 <- self$clever_covariates(tmle_task, fold_number)[[self$outcome_node]]
-      Y <- tmle_task$get_tmle_node(self$outcome_node, impute_censoring = TRUE)
+      Y <- tmle_task$get_tmle_node(self$outcome_node)
       EYA <- self$observed_likelihood$get_likelihood(tmle_task, self$outcome_node, fold_number)
       I0 <- self$cf_likelihood_offsite$get_likelihoods(tmle_task, self$site_node, fold_number)
 

@@ -3,7 +3,9 @@
 \name{LF_fit_site}
 \alias{LF_fit_site}
 \title{Likelihood Factor Estimated from Data using sl3.}
-\format{\code{\link{R6Class}} object.}
+\format{
+\code{\link{R6Class}} object.
+}
 \value{
 \code{LF_base} object
 }
@@ -21,6 +23,10 @@ Inherits from \code{\link{LF_base}}; see that page for documentation on likeliho
     \item{\code{learner}}{An sl3 learner to be used to estimate the factor
     }
     \item{\code{...}}{Not currently used.
+    }
+    \item{\code{site}}{Value that indicates an observation being a trial data
+    }
+    \item{\code{site_node}}{Node of the trial indicator
     }
     \item{\code{type}}{character, either "density", for conditional density or, "mean" for conditional mean
     }
@@ -55,13 +61,13 @@ Inherits from \code{\link{LF_base}}; see that page for documentation on likeliho
 \item \out{<span class="pkg-link" data-pkg="tmle3" data-topic="LF_base" data-id="print">}\href{../../tmle3/html/LF_base.html#method-print}{\code{tmle3::LF_base$print()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="tmle3" data-topic="LF_fit" data-id="get_density">}\href{../../tmle3/html/LF_fit.html#method-get_density}{\code{tmle3::LF_fit$get_density()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="tmle3" data-topic="LF_fit" data-id="get_mean">}\href{../../tmle3/html/LF_fit.html#method-get_mean}{\code{tmle3::LF_fit$get_mean()}}\out{</span>}
-\item \out{<span class="pkg-link" data-pkg="tmle3" data-topic="LF_fit" data-id="sample">}\href{../../tmle3/html/LF_fit.html#method-sample}{\code{tmle3::LF_fit$sample()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="tmle3" data-topic="LF_fit" data-id="train">}\href{../../tmle3/html/LF_fit.html#method-train}{\code{tmle3::LF_fit$train()}}\out{</span>}
 }
 \out{</details>}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-new"></a>}}
+\if{latex}{\out{\hypertarget{method-new}{}}}
 \subsection{Method \code{new()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{LF_fit_site$new(
@@ -77,6 +83,7 @@ Inherits from \code{\link{LF_base}}; see that page for documentation on likeliho
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-delayed_train"></a>}}
+\if{latex}{\out{\hypertarget{method-delayed_train}{}}}
 \subsection{Method \code{delayed_train()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{LF_fit_site$delayed_train(tmle_task)}\if{html}{\out{</div>}}
@@ -85,6 +92,7 @@ Inherits from \code{\link{LF_base}}; see that page for documentation on likeliho
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{

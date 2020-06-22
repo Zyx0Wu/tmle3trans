@@ -6,6 +6,7 @@
 #' @importFrom R6 R6Class
 #' @importFrom uuid UUIDgenerate
 #' @importFrom methods is
+#' @importFrom tmle3 LF_fit
 #' @family Likelihood objects
 #' @keywords data
 #'
@@ -22,6 +23,10 @@
 #'     \item{\code{learner}}{An sl3 learner to be used to estimate the factor
 #'     }
 #'     \item{\code{...}}{Not currently used.
+#'     }
+#'     \item{\code{site}}{Value that indicates an observation being a trial data
+#'     }
+#'     \item{\code{site_node}}{Node of the trial indicator
 #'     }
 #'     \item{\code{type}}{character, either "density", for conditional density or, "mean" for conditional mean
 #'     }
@@ -56,7 +61,7 @@ LF_fit_site <- R6Class(
       # fit scaled task for bounded continuous
       site_data <- tmle_task$get_tmle_node(self$site_node)
       tmle_task_site <- tmle_task$subset_task(site_data == self$site)
-      learner_task_site <- tmle_task_site$get_regression_task(outcome_node, scale = TRUE, drop_censored = TRUE)
+      learner_task_site <- tmle_task_site$get_regression_task(outcome_node, scale = TRUE)
       learner_fit <- delayed_learner_train(self$learner, learner_task_site)
       return(learner_fit)
     }
