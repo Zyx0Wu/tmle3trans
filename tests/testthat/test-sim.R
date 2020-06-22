@@ -11,20 +11,19 @@ library(future)
 # note: S <=> A, site variable
 
 # generate data
-'
-W <- c(2,2,3,4,2,3,5,6,7,8)
-A <- c(1,1,1,1,0,0,0,0,0,0)
-Y <- c(3,9,8,1,2,4,5,6,7,0)
-'
-#set.seed(1234)
+set.seed(1234)
 n <- 10000
 W <- sample(1:4, n, replace=TRUE, prob=c(0.1, 0.2, 0.65, 0.05))
 A <- rbinom(n, 1, expit(1.4 - 0.6 * W))
 Y <- rnorm(n, 2 + .5 * W, 1)
-
-# estimation of truth
-est = mean((A == 0) * Y)/mean(A == 0)
-
+'
+# truth
+w = 1:4
+pw = c(0.1, 0.2, 0.65, 0.05)
+pw0 = (1 - expit(1.4 - 0.6 * w)) * pw
+pw0 = pw0 / sum(pw0)
+Ey0 = sum((2 + .5 * w) * pw0)
+'
 # data
 data <- data.table(W=factor(W), A=factor(A), Y)
 node_list <- list(W = "W", A = "A", Y = "Y")
@@ -82,5 +81,7 @@ test_that("psi results match", {
 test_that("se results match", {
   expect_equal(tmle_se, sd, tol = tol)
 })
+'
+Ey0 >= tmle_summary$lower && Ey0 <= tmle_summary$upper
+'
 
-est >= tmle_summary$lower && est <= tmle_summary$upper
