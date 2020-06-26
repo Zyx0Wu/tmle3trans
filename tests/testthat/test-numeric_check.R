@@ -1,4 +1,4 @@
-context("Test - Simulation")
+context("Test - Numeric Check")
 
 library(sl3)
 library(tmle3)
@@ -41,6 +41,9 @@ factor_list <- list(
 )
 
 initial_likelihood <- Likelihood$new(factor_list)$train(tmle_task)
+
+## TMLE should not update in this case and
+## should numerically match the non-parametric estimator
 
 ### 1. non-parametric estimator ###
 psi_0 = function(b) mean(W == b & A == 0)

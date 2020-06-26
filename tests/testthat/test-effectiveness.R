@@ -1,4 +1,4 @@
-context("Test - cpp data")
+context("Test - Effectiveness")
 
 library(sl3)
 library(tmle3)
