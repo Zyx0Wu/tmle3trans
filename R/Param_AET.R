@@ -1,6 +1,6 @@
-#' Average Treatment Effect
+#' Average Effect Transportation
 #'
-#' Parameter definition for the Average Treatment Effect (ATE).
+#' Parameter definition for the Average Effect Transportation (AET).
 #' @importFrom R6 R6Class
 #' @importFrom uuid UUIDgenerate
 #' @importFrom methods is
@@ -13,7 +13,7 @@
 #' @format \code{\link{R6Class}} object.
 #'
 #' @section Constructor:
-#'   \code{define_param(Param_ATT, observed_likelihood, intervention_list, ..., outcome_node)}
+#'   \code{define_param(Param_AET, observed_likelihood, intervention_list, ..., outcome_node)}
 #'
 #'   \describe{
 #'     \item{\code{observed_likelihood}}{A \code{\link{Likelihood}} corresponding to the observed likelihood
@@ -31,25 +31,21 @@
 
 #' @section Fields:
 #' \describe{
-#'     \item{\code{cf_likelihood_treatment}}{the counterfactual likelihood for the treatment
+#'     \item{\code{cf_likelihood_onsite}}{the counterfactual likelihood for clinical trial
 #'     }
-#'     \item{\code{cf_likelihood_control}}{the counterfactual likelihood for the control
-#'     }
-#'     \item{\code{intervention_list_treatment}}{A list of objects inheriting from \code{\link{LF_base}}, representing the treatment intervention
-#'     }
-#'     \item{\code{intervention_list_control}}{A list of objects inheriting from \code{\link{LF_base}}, representing the control intervention
+#'     \item{\code{cf_likelihood_offsite}}{the counterfactual likelihood for real world
 #'     }
 #' }
 #' @export
-Param_TR <- R6Class(
-  classname = "Param_TR",
+Param_AET <- R6Class(
+  classname = "Param_AET",
   portable = TRUE,
   class = TRUE,
   inherit = Param_base,
   public = list(
     initialize = function(observed_likelihood, onsite = 1, offsite = 0,
                           ...,
-                          covariate_node = "W", site_node = "A", outcome_node = "Y") {
+                          covariate_node = "W", site_node = "S", outcome_node = "Y") {
       super$initialize(observed_likelihood, ..., outcome_node = outcome_node)
       private$.onsite <- onsite
       private$.offsite <- offsite
@@ -66,16 +62,15 @@ Param_TR <- R6Class(
 
       I1 <- self$cf_likelihood_onsite$get_likelihoods(tmle_task, self$site_node, fold_number)
 
-      cf_train_offsite <- training_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(A = rep(self$offsite, training_task$nrow)))
+      cf_train_offsite <- training_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$offsite, training_task$nrow)))
       p0 <- mean(self$observed_likelihood$get_likelihood(cf_train_offsite, self$site_node, fold_number))
 
-      cf_task_onsite <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(A = rep(self$onsite, tmle_task$nrow)))
-      cf_task_offsite <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(A = rep(self$offsite, tmle_task$nrow)))
+      cf_task_onsite <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$onsite, tmle_task$nrow)))
+      cf_task_offsite <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$offsite, tmle_task$nrow)))
       p1W <- self$observed_likelihood$get_likelihood(cf_task_onsite, self$site_node, fold_number)
       p0W <- self$observed_likelihood$get_likelihood(cf_task_offsite, self$site_node, fold_number)
 
       H1 <- I1 / p1W * p0W / p0
-
       return(list(Y = H1))
     },
     estimates = function(tmle_task = NULL, fold_number = "full") {
@@ -87,21 +82,18 @@ Param_TR <- R6Class(
       # clever_covariates happen here (for this param) only, but this is repeated computation
       H1 <- self$clever_covariates(tmle_task, fold_number)[[self$outcome_node]]
       Y <- tmle_task$get_tmle_node(self$outcome_node)
-      EYA <- self$observed_likelihood$get_likelihood(tmle_task, self$outcome_node, fold_number)
+      EYS <- self$observed_likelihood$get_likelihood(tmle_task, self$outcome_node, fold_number)
       I0 <- self$cf_likelihood_offsite$get_likelihoods(tmle_task, self$site_node, fold_number)
 
-      cf_task_onsite <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(A = rep(self$onsite, tmle_task$nrow)))
+      cf_task_onsite <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$onsite, tmle_task$nrow)))
       EY1 <- self$observed_likelihood$get_likelihood(cf_task_onsite, self$outcome_node, fold_number)
 
-      cf_train_offsite <- training_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(A = rep(self$offsite, training_task$nrow)))
+      cf_train_offsite <- training_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$offsite, training_task$nrow)))
       p0 <- mean(self$observed_likelihood$get_likelihood(cf_train_offsite, self$site_node, fold_number))
 
       psi <- mean(I0/p0 * EY1)
-
-      IC <- H1 * (Y - EYA) + I0/p0 * (EY1 - psi)
-
-      result <- list(psi = psi, IC = IC)
-      return(result)
+      IC <- H1 * (Y - EYS) + I0/p0 * (EY1 - psi)
+      return(list(psi = psi, IC = IC))
     }
   ),
   active = list(
@@ -132,7 +124,7 @@ Param_TR <- R6Class(
     }
   ),
   private = list(
-    .type = "TMLE_TR",
+    .type = "TMLE_AET",
     .observed_likelihood_onsite = NULL,
     .covariate_node = NULL,
     .site_node = NULL,

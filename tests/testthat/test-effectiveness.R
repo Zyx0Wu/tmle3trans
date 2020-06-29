@@ -20,33 +20,43 @@ node_list <- list(
     "asset_chouki", "asset_refrig", "asset_bike",
     "asset_moto", "asset_sewmach", "asset_mobile"
   ),
-  A = "asset_tv", # pretested insignificant variable to the outcome
+  S = "asset_tv", # pretested insignificant variable to the outcome
   Y = "whz"
 )
 processed <- process_missing(washb_data, node_list)
 data <- processed$data
 node_list <- processed$node_list
 
-### 1. naive ###
 W <- data[ ,colnames(data) %in% node_list$W, with=FALSE]
 Y <- data[ ,colnames(data) %in% node_list$Y, with=FALSE]
 
-W1 <- W[data[[node_list$A]] == 1, ]
-Y1 <- Y[data[[node_list$A]] == 1, ]
-W0 <- W[data[[node_list$A]] == 0, ]
-Y0 <- Y[data[[node_list$A]] == 0, ]
+### observed mean ###
+Y0 <- Y[data[[node_list$S]] == 0, ]
+mean <- mean(as.matrix(Y0))
+std <- sd(as.matrix(Y0)) / sqrt(length(as.matrix(Y0)))
+
+### 1. naive ###
+W1 <- W[data[[node_list$S]] == 1, ]
+Y1 <- Y[data[[node_list$S]] == 1, ]
+W0 <- W[data[[node_list$S]] == 0, ]
 
 fit <- glm(paste(node_list$Y, "~", paste(node_list$W, collapse = " + ")),
            data = cbind(W1, Y1))
 est <- predict(fit, newdata = W0, type = 'response', se.fit = TRUE)
 psis <- predict(fit, newdata = W0, type = 'response', se.fit = TRUE)$fit
-stds <- predict(fit, newdata = W0, type = 'response', se.fit = TRUE)$se.fit
+ses <- predict(fit, newdata = W0, type = 'response', se.fit = TRUE)$se.fit
 
 psi <- mean(psis)
-std <- sqrt(mean(stds^2)) / sqrt(length(stds))
-CI95 <- sprintf("(%f, %f)", psi - 1.96*std, psi + 1.96*std)
+se <- sqrt(mean(ses^2)) / sqrt(length(ses))
+CI95 <- sprintf("(%f, %f)", psi - 1.96*se, psi + 1.96*se)
 
 ### 2. TMLE ###
+tmle_spec <- tmle_AET(1, 0)
+
+# define data
+tmle_task <- tmle_spec$make_tmle_task(data, node_list)
+
+# define learners
 qlib <- make_learner_stack(
   "Lrnr_mean",
   "Lrnr_glm_fast",
@@ -60,31 +70,19 @@ glib <- make_learner_stack(
 )
 
 ls_metalearner <- make_learner(Lrnr_nnls)
-mn_metalearner <- make_learner(
-  Lrnr_solnp, metalearner_linear_multinomial,
-  loss_loglik_multinomial
+bn_metalearner <- make_learner(
+  Lrnr_solnp, metalearner_logistic_binomial,
+  loss_loglik_binomial
 )
 Q_learner <- make_learner(Lrnr_sl, qlib, ls_metalearner)
-g_learner <- make_learner(Lrnr_sl, glib, mn_metalearner)
-learner_list <- list(Y = Q_learner, A = g_learner)
+g_learner <- make_learner(Lrnr_sl, glib, bn_metalearner)
+learner_list <- list(Y = Q_learner, S = g_learner)
 
-tmle_spec <- tmle_TR(1, 0)
-
-# define data
-tmle_task <- tmle_spec$make_tmle_task(data, node_list)
-
-# define likelihood
-factor_list <- list(
-  define_lf(LF_emp, "W"),
-  define_lf(LF_fit, "A", learner = learner_list[["A"]]),
-  define_lf(LF_fit_site, "Y", learner = learner_list[["Y"]], type = "mean")
-)
-
-initial_likelihood <- Likelihood$new(factor_list)$train(tmle_task)
+# estimate likelihood
+initial_likelihood <- tmle_spec$make_initial_likelihood(tmle_task, learner_list)
 
 # define update method (submodel + loss function)
-# disable cvtmle for this test to compare with tmle package
-updater <- tmle3_Update$new(cvtmle = FALSE, convergence_type = "sample_size")
+updater <- tmle3_Update$new()
 targeted_likelihood <- Targeted_Likelihood$new(initial_likelihood, updater)
 
 # define parameter

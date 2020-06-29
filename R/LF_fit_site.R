@@ -44,7 +44,7 @@ LF_fit_site <- R6Class(
   class = TRUE,
   inherit = LF_fit,
   public = list(
-    initialize = function(name, learner, ..., site = 1, site_node = "A", type = "density") {
+    initialize = function(name, learner, ..., site = 1, site_node = "S", type = "density") {
       super$initialize(name, learner, ..., type = type)
       private$.site <- site
       private$.site_node <- site_node
@@ -55,9 +55,9 @@ LF_fit_site <- R6Class(
       if (self$learner$is_trained) {
         return(self$learner)
       }
-      
+
       outcome_node <- self$name
-      
+
       # fit scaled task for bounded continuous
       site_data <- tmle_task$get_tmle_node(self$site_node)
       tmle_task_site <- tmle_task$subset_task(site_data == self$site)
