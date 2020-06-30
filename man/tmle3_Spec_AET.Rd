@@ -31,6 +31,7 @@ Defines a TMLE with Average Effect Transportation
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-new"></a>}}
+\if{latex}{\out{\hypertarget{method-new}{}}}
 \subsection{Method \code{new()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{tmle3_Spec_AET$new(onsite = 1, offsite = 0, ...)}\if{html}{\out{</div>}}
@@ -39,6 +40,7 @@ Defines a TMLE with Average Effect Transportation
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-make_tmle_task"></a>}}
+\if{latex}{\out{\hypertarget{method-make_tmle_task}{}}}
 \subsection{Method \code{make_tmle_task()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{tmle3_Spec_AET$make_tmle_task(data, node_list, ...)}\if{html}{\out{</div>}}
@@ -47,6 +49,7 @@ Defines a TMLE with Average Effect Transportation
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-make_initial_likelihood"></a>}}
+\if{latex}{\out{\hypertarget{method-make_initial_likelihood}{}}}
 \subsection{Method \code{make_initial_likelihood()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{tmle3_Spec_AET$make_initial_likelihood(tmle_task, learner_list = NULL)}\if{html}{\out{</div>}}
@@ -55,6 +58,7 @@ Defines a TMLE with Average Effect Transportation
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-make_params"></a>}}
+\if{latex}{\out{\hypertarget{method-make_params}{}}}
 \subsection{Method \code{make_params()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{tmle3_Spec_AET$make_params(tmle_task, targeted_likelihood)}\if{html}{\out{</div>}}
@@ -63,6 +67,7 @@ Defines a TMLE with Average Effect Transportation
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{

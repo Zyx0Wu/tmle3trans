@@ -3,7 +3,9 @@
 \name{Param_AET}
 \alias{Param_AET}
 \title{Average Effect Transportation}
-\format{\code{\link{R6Class}} object.}
+\format{
+\code{\link{R6Class}} object.
+}
 \value{
 \code{Param_base} object
 }
@@ -65,6 +67,7 @@ Other Parameters:
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-new"></a>}}
+\if{latex}{\out{\hypertarget{method-new}{}}}
 \subsection{Method \code{new()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Param_AET$new(
@@ -81,6 +84,7 @@ Other Parameters:
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-clever_covariates"></a>}}
+\if{latex}{\out{\hypertarget{method-clever_covariates}{}}}
 \subsection{Method \code{clever_covariates()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Param_AET$clever_covariates(tmle_task = NULL, fold_number = "full")}\if{html}{\out{</div>}}
@@ -89,6 +93,7 @@ Other Parameters:
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-estimates"></a>}}
+\if{latex}{\out{\hypertarget{method-estimates}{}}}
 \subsection{Method \code{estimates()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Param_AET$estimates(tmle_task = NULL, fold_number = "full")}\if{html}{\out{</div>}}
@@ -97,6 +102,7 @@ Other Parameters:
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{

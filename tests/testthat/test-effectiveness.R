@@ -26,8 +26,8 @@ processed <- process_missing(washb_data, node_list)
 data <- processed$data
 node_list <- processed$node_list
 '
-set.seed(123)
-n <- 10000
+set.seed(1234)
+n <- 1000
 W1 <- sample(1:4, n, replace=TRUE, prob=c(0.1, 0.2, 0.65, 0.05))
 W2 <- rnorm(n, 0.7, 1)
 W3 <- rpois(n, 3)

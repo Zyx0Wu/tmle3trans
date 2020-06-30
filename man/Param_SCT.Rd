@@ -3,7 +3,9 @@
 \name{Param_SCT}
 \alias{Param_SCT}
 \title{Survival Curve}
-\format{\code{\link{R6Class}} object.}
+\format{
+\code{\link{R6Class}} object.
+}
 \value{
 \code{Param_base} object
 }
@@ -68,6 +70,7 @@ Other Parameters:
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-new"></a>}}
+\if{latex}{\out{\hypertarget{method-new}{}}}
 \subsection{Method \code{new()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Param_SCT$new(
@@ -85,6 +88,7 @@ Other Parameters:
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-long_to_mat"></a>}}
+\if{latex}{\out{\hypertarget{method-long_to_mat}{}}}
 \subsection{Method \code{long_to_mat()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Param_SCT$long_to_mat(x, id, time)}\if{html}{\out{</div>}}
@@ -93,6 +97,7 @@ Other Parameters:
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-hm_to_sm"></a>}}
+\if{latex}{\out{\hypertarget{method-hm_to_sm}{}}}
 \subsection{Method \code{hm_to_sm()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Param_SCT$hm_to_sm(hm)}\if{html}{\out{</div>}}
@@ -101,6 +106,7 @@ Other Parameters:
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-clever_covariates_internal"></a>}}
+\if{latex}{\out{\hypertarget{method-clever_covariates_internal}{}}}
 \subsection{Method \code{clever_covariates_internal()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Param_SCT$clever_covariates_internal(
@@ -113,6 +119,7 @@ Other Parameters:
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-clever_covariates"></a>}}
+\if{latex}{\out{\hypertarget{method-clever_covariates}{}}}
 \subsection{Method \code{clever_covariates()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Param_SCT$clever_covariates(tmle_task, fold_number = "full")}\if{html}{\out{</div>}}
@@ -121,6 +128,7 @@ Other Parameters:
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-estimates"></a>}}
+\if{latex}{\out{\hypertarget{method-estimates}{}}}
 \subsection{Method \code{estimates()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Param_SCT$estimates(tmle_task = NULL, fold_number = "full")}\if{html}{\out{</div>}}
@@ -129,6 +137,7 @@ Other Parameters:
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{
