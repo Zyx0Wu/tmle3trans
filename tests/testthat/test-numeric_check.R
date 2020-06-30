@@ -5,11 +5,12 @@ library(tmle3)
 library(tmle3tr)
 library(uuid)
 library(assertthat)
+library(testthat)
 library(data.table)
 library(future)
 
 # generate data
-set.seed(1234)
+set.seed(321)
 n <- 10000
 W <- sample(1:4, n, replace=TRUE, prob=c(0.1, 0.2, 0.65, 0.05))
 S <- rbinom(n, 1, expit(1.4 - 0.6 * W))

@@ -8,9 +8,8 @@ library(assertthat)
 library(data.table)
 library(future)
 
-# note: S <=> A, site variable
-
 # setup data for test
+'
 washb_data <- fread("https://raw.githubusercontent.com/tlverse/tlverse-data/master/wash-benefits/washb_data.csv", stringsAsFactors = TRUE)
 node_list <- list(
   W = c(
@@ -26,19 +25,31 @@ node_list <- list(
 processed <- process_missing(washb_data, node_list)
 data <- processed$data
 node_list <- processed$node_list
+'
+set.seed(123)
+n <- 10000
+W1 <- sample(1:4, n, replace=TRUE, prob=c(0.1, 0.2, 0.65, 0.05))
+W2 <- rnorm(n, 0.7, 1)
+W3 <- rpois(n, 3)
+S <- rbinom(n, 1, expit(1.4 - 0.6 * W1 - 2 * W2 + 0.7 * W3))
+Y <- rnorm(n, -1 + .5 * W1 * sin(W3 + 8) + .2 * sqrt(abs(-W2^3 + exp(W2/(W3-3.5)))), .4)
 
+data <- data.table(W1,W2,W3,S,Y)
+node_list <- list(W = c("W1", "W2", "W3"), S = "S", Y = "Y")
 W <- data[ ,colnames(data) %in% node_list$W, with=FALSE]
-Y <- data[ ,colnames(data) %in% node_list$Y, with=FALSE]
+
+data0 <- data[data[[node_list$S]] == 0, ]
+data1 <- data[data[[node_list$S]] == 1, ]
 
 ### observed mean ###
-Y0 <- Y[data[[node_list$S]] == 0, ]
+Y0 <- data0[ ,colnames(data0) %in% node_list$Y, with=FALSE]
 mean <- mean(as.matrix(Y0))
 std <- sd(as.matrix(Y0)) / sqrt(length(as.matrix(Y0)))
 
 ### 1. naive ###
-W1 <- W[data[[node_list$S]] == 1, ]
-Y1 <- Y[data[[node_list$S]] == 1, ]
-W0 <- W[data[[node_list$S]] == 0, ]
+W1 <- data1[ ,colnames(data1) %in% node_list$W, with=FALSE]
+Y1 <- data1[ ,colnames(data1) %in% node_list$Y, with=FALSE]
+W0 <- data0[ ,colnames(data0) %in% node_list$W, with=FALSE]
 
 fit <- glm(paste(node_list$Y, "~", paste(node_list$W, collapse = " + ")),
            data = cbind(W1, Y1))

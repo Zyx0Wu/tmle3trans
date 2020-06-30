@@ -33,7 +33,7 @@ Defines a TMLE with Survival Curve Transportation
 \if{html}{\out{<a id="method-new"></a>}}
 \subsection{Method \code{new()}}{
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{tmle3_Spec_SCT$new(onsite = 1, offsite = 0, ...)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{tmle3_Spec_SCT$new(target_times = NULL, onsite = 1, offsite = 0, ...)}\if{html}{\out{</div>}}
 }
 
 }

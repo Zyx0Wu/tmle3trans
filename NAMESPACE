@@ -2,6 +2,7 @@
 
 export(LF_fit_site)
 export(Param_AET)
+export(Param_SCT)
 export(expit)
 export(logit)
 export(point_tr_likelihood)

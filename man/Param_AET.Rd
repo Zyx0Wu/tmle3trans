@@ -38,6 +38,10 @@ Parameter definition for the Average Effect Transportation (AET).
 }
 }
 
+\seealso{
+Other Parameters: 
+\code{\link{Param_SCT}}
+}
 \concept{Parameters}
 \keyword{data}
 \section{Super class}{

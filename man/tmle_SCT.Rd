@@ -4,7 +4,7 @@
 \alias{tmle_SCT}
 \title{All Treatment Specific Means}
 \usage{
-tmle_SCT(onsite = 1, offsite = 0, ...)
+tmle_SCT(target_times = NULL, onsite = 1, offsite = 0, ...)
 }
 \arguments{
 \item{onsite}{value for onsite}

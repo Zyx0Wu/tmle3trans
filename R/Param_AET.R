@@ -101,6 +101,9 @@ Param_AET <- R6Class(
       param_form <- sprintf("E[E(%s | %s, trial) | reality]", self$outcome_node, self$covariate_node)
       return(param_form)
     },
+    update_nodes = function() {
+      return(c(self$outcome_node))
+    },
     observed_likelihood_onsite = function() {
       return(private$.observed_likelihood_onsite)
     },
