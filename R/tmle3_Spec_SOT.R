@@ -1,4 +1,4 @@
-#' Defines a TMLE with Survival Curve Transportation
+#' Defines a TMLE with Survival Outcome Transportation
 #'
 #'
 #' @importFrom R6 R6Class
@@ -8,8 +8,8 @@
 #' @export
 #
 
-tmle3_Spec_SCT <- R6Class(
-  classname = "tmle3_Spec_SCT",
+tmle3_Spec_SOT <- R6Class(
+  classname = "tmle3_Spec_SOT",
   portable = TRUE,
   class = TRUE,
   inherit = tmle3_Spec,
@@ -32,7 +32,7 @@ tmle3_Spec_SCT <- R6Class(
     },
 
     make_params = function(tmle_task, likelihood) {
-      tmle_params <- define_param(Param_SCT, targeted_likelihood,
+      tmle_params <- define_param(Param_SOT, targeted_likelihood,
                                   target_times = self$options$target_times,
                                   onsite = self$options$onsite,
                                   offsite = self$options$offsite)
@@ -49,8 +49,8 @@ tmle3_Spec_SCT <- R6Class(
 #' @param onsite value for onsite
 #' @param offsite value for offsite
 #' @export
-tmle_SCT <- function(target_times = NULL, onsite = 1, offsite = 0, ...) {
-  tmle3_Spec_SCT$new(target_times = target_times,
+tmle_SOT <- function(target_times = NULL, onsite = 1, offsite = 0, ...) {
+  tmle3_Spec_SOT$new(target_times = target_times,
                      onsite = onsite, offsite = offsite)
 }
 

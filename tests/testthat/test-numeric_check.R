@@ -44,7 +44,7 @@ s_n = sd(D_n) / sqrt(n)
 data <- data.table(W=factor(W), S=factor(S), Y)
 node_list <- list(W = "W", S = "S", Y = "Y")
 
-tmle_spec <- tmle_AET(1, 0)
+tmle_spec <- tmle_AOT(1, 0)
 
 # define data
 tmle_task <- tmle_spec$make_tmle_task(data, node_list)

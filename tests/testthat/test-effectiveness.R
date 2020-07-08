@@ -109,3 +109,6 @@ tmle_se <- tmle_summary$se
 tmle_epsilon <- updater$epsilons[[1]]$Y
 
 tmle_CI95 <- sprintf("(%f, %f)", tmle_psi - 1.96*tmle_se, tmle_psi + 1.96*tmle_se)
+
+# MSE, coverage
+

@@ -1,4 +1,4 @@
-#' Survival Curve
+#' Survival Outcome Transportation
 #'
 #' @importFrom R6 R6Class
 #' @importFrom uuid UUIDgenerate
@@ -33,8 +33,8 @@
 #'     }
 #' }
 #' @export
-Param_SCT <- R6Class(
-  classname = "Param_SCT",
+Param_SOT <- R6Class(
+  classname = "Param_SOT",
   portable = TRUE,
   class = TRUE,
   inherit = Param_base,
@@ -42,15 +42,13 @@ Param_SCT <- R6Class(
     initialize = function(observed_likelihood, target_times = NULL, 
                           onsite = 1, offsite = 0, 
                           ..., 
-                          covariate_node = "W", site_node = "S", outcome_node = "N") {
+                          outcome_node = "N") {
       # TODO: check outcome_node, current I(T<=t, delta=1), need I(T=t, delta=1)
       super$initialize(observed_likelihood, ..., outcome_node = outcome_node)
       private$.onsite <- onsite
       private$.offsite <- offsite
-      private$.covariate_node <- covariate_node
-      private$.site_node <- site_node
-      private$.cf_likelihood_onsite <- make_CF_Likelihood(observed_likelihood, define_lf(LF_static, self$site_node, value = self$onsite))
-      private$.cf_likelihood_offsite <- make_CF_Likelihood(observed_likelihood, define_lf(LF_static, self$site_node, value = self$offsite))
+      private$.cf_likelihood_onsite <- make_CF_Likelihood(observed_likelihood, define_lf(LF_static, "S", value = self$onsite))
+      private$.cf_likelihood_offsite <- make_CF_Likelihood(observed_likelihood, define_lf(LF_static, "S", value = self$offsite))
       private$.target_times <- target_times
     },
     long_to_mat = function(x,id, time){
@@ -70,15 +68,15 @@ Param_SCT <- R6Class(
       if (is.null(tmle_task)) {
         tmle_task <- self$observed_likelihood$training_task
       }
-      I1 <- self$cf_likelihood_onsite$get_likelihoods(tmle_task, self$site_node, fold_number)
+      I1 <- self$cf_likelihood_onsite$get_likelihoods(tmle_task, "S", fold_number)
       
       cf_train_offsite <- training_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$offsite, training_task$nrow)))
-      p0 <- mean(self$observed_likelihood$get_likelihood(cf_train_offsite, self$site_node, fold_number))
+      p0 <- mean(self$observed_likelihood$get_likelihood(cf_train_offsite, "S", fold_number))
       
       cf_task_onsite <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$onsite, tmle_task$nrow)))
       cf_task_offsite <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$offsite, tmle_task$nrow)))
-      p1W <- self$observed_likelihood$get_likelihood(cf_task_onsite, self$site_node, fold_number)
-      p0W <- self$observed_likelihood$get_likelihood(cf_task_offsite, self$site_node, fold_number)
+      p1W <- self$observed_likelihood$get_likelihood(cf_task_onsite, "S", fold_number)
+      p0W <- self$observed_likelihood$get_likelihood(cf_task_offsite, "S", fold_number)
       
       pN <- self$observed_likelihood$get_likelihoods(tmle_task, "N", fold_number)
       # TODO: make bound configurable
@@ -130,13 +128,13 @@ Param_SCT <- R6Class(
       # TODO: return format
       # TODO: share work between this and the IC code
       H1 <- self$clever_covariates_internal(tmle_task, fold_number, subset_times = FALSE)[[self$outcome_node]]
-      I0 <- self$cf_likelihood_offsite$get_likelihoods(tmle_task, self$site_node, fold_number)
+      I0 <- self$cf_likelihood_offsite$get_likelihoods(tmle_task, "S", fold_number)
       
       cf_task_onsite <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$onsite, tmle_task$nrow)))
       pN1 <- self$observed_likelihood$get_likelihood(cf_task_onsite, self$outcome_node, fold_number)
       
       cf_train_offsite <- training_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$offsite, training_task$nrow)))
-      p0 <- mean(self$observed_likelihood$get_likelihood(cf_train_offsite, self$site_node, fold_number))
+      p0 <- mean(self$observed_likelihood$get_likelihood(cf_train_offsite, "S", fold_number))
       
       time <- tmle_task$time
       id <- tmle_task$id
@@ -184,7 +182,7 @@ Param_SCT <- R6Class(
   active = list(
     # TODO: modify
     name = function() {
-      param_form <- sprintf("E[E(%s | %s, trial) | reality]", self$outcome_node, self$covariate_node)
+      param_form <- sprintf("E[E(%s | W, trial) | reality]", self$outcome_node)
       return(param_form)
     },
     cf_likelihood = function() {
@@ -201,7 +199,7 @@ Param_SCT <- R6Class(
     }
   ),
   private = list(
-    .type = "TMLE_SCT",
+    .type = "TMLE_SOT",
     .cf_likelihood = NULL,
     .supports_outcome_censoring = TRUE,
     .target_times = NULL
