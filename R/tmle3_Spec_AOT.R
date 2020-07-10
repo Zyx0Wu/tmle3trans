@@ -18,13 +18,13 @@ tmle3_Spec_AOT <- R6Class(
     },
     make_tmle_task = function(data, node_list, ...) {
       variable_types <- self$options$variable_types
-
-      tmle_task <- point_o_task(data, node_list, variable_types)
+      tmle_task <- point_task(data, node_list, point_o_npsem, variable_types)
 
       return(tmle_task)
     },
     make_initial_likelihood = function(tmle_task, learner_list = NULL) {
       likelihood <- point_o_likelihood(tmle_task, learner_list)
+
       return(likelihood)
     },
     make_params = function(tmle_task, targeted_likelihood) {

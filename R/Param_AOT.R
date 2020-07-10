@@ -61,17 +61,17 @@ Param_AOT <- R6Class(
         tmle_task <- self$observed_likelihood$training_task
       }
 
-      I1 <- self$cf_likelihood_onsite$get_likelihoods(tmle_task, "S", fold_number)
+      IS1 <- self$cf_likelihood_onsite$get_likelihoods(tmle_task, "S", fold_number)
 
       cf_train_offsite <- training_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$offsite, training_task$nrow)))
-      p0 <- mean(self$observed_likelihood$get_likelihood(cf_train_offsite, "S", fold_number))
+      pS0 <- mean(self$observed_likelihood$get_likelihood(cf_train_offsite, "S", fold_number))
 
       cf_task_onsite <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$onsite, tmle_task$nrow)))
       cf_task_offsite <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$offsite, tmle_task$nrow)))
-      p1W <- self$observed_likelihood$get_likelihood(cf_task_onsite, "S", fold_number)
-      p0W <- self$observed_likelihood$get_likelihood(cf_task_offsite, "S", fold_number)
+      pS1W <- self$observed_likelihood$get_likelihood(cf_task_onsite, "S", fold_number)
+      pS0W <- self$observed_likelihood$get_likelihood(cf_task_offsite, "S", fold_number)
 
-      H1 <- I1 / p1W * p0W / p0
+      H1 <- IS1 / pS1W * pS0W / pS0
       return(list(Y = H1))
     },
     estimates = function(tmle_task = NULL, fold_number = "full") {
@@ -84,16 +84,16 @@ Param_AOT <- R6Class(
       H1 <- self$clever_covariates(tmle_task, fold_number)[[self$outcome_node]]
       Y <- tmle_task$get_tmle_node(self$outcome_node)
       EYS <- self$observed_likelihood$get_likelihood(tmle_task, self$outcome_node, fold_number)
-      I0 <- self$cf_likelihood_offsite$get_likelihoods(tmle_task, "S", fold_number)
+      IS0 <- self$cf_likelihood_offsite$get_likelihoods(tmle_task, "S", fold_number)
 
       cf_task_onsite <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$onsite, tmle_task$nrow)))
-      EY1 <- self$observed_likelihood$get_likelihood(cf_task_onsite, self$outcome_node, fold_number)
+      EYS1 <- self$observed_likelihood$get_likelihood(cf_task_onsite, self$outcome_node, fold_number)
 
       cf_train_offsite <- training_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$offsite, training_task$nrow)))
-      p0 <- mean(self$observed_likelihood$get_likelihood(cf_train_offsite, "S", fold_number))
+      pS0 <- mean(self$observed_likelihood$get_likelihood(cf_train_offsite, "S", fold_number))
 
-      psi <- mean(I0/p0 * EY1)
-      IC <- H1 * (Y - EYS) + I0/p0 * (EY1 - psi)
+      psi <- mean(IS0/pS0 * EYS1)
+      IC <- H1 * (Y - EYS) + IS0/pS0 * (EYS1 - psi)
       return(list(psi = psi, IC = IC))
     }
   ),

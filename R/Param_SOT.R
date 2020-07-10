@@ -42,7 +42,7 @@ Param_SOT <- R6Class(
     initialize = function(observed_likelihood, target_times = NULL, 
                           onsite = 1, offsite = 0, 
                           ..., 
-                          outcome_node = "N") {
+                          outcome_node = "F") {
       # TODO: check outcome_node, current I(T<=t, delta=1), need I(T=t, delta=1)
       super$initialize(observed_likelihood, ..., outcome_node = outcome_node)
       private$.onsite <- onsite
@@ -51,61 +51,49 @@ Param_SOT <- R6Class(
       private$.cf_likelihood_offsite <- make_CF_Likelihood(observed_likelihood, define_lf(LF_static, "S", value = self$offsite))
       private$.target_times <- target_times
     },
-    long_to_mat = function(x,id, time){
-      dt <- data.table(id=id,time=time,x=as.vector(x))
-      wide <- dcast(dt, id~time, value.var="x")
-      mat <- as.matrix(wide[,-1,with=FALSE])
-      return(mat)
-    },
-    hm_to_sm = function(hm){
-      # TODO: check
-      sm <- t(apply(1-hm,1,cumprod))
-      sm <- cbind(1,sm[,-ncol(sm)])
-      return(sm)
-    },
     clever_covariates_internal = function(tmle_task = NULL, fold_number = "full", subset_times = FALSE) {
       training_task <- self$observed_likelihood$training_task
       if (is.null(tmle_task)) {
         tmle_task <- self$observed_likelihood$training_task
       }
-      I1 <- self$cf_likelihood_onsite$get_likelihoods(tmle_task, "S", fold_number)
+      IS1 <- self$cf_likelihood_onsite$get_likelihoods(tmle_task, "S", fold_number)
       
       cf_train_offsite <- training_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$offsite, training_task$nrow)))
-      p0 <- mean(self$observed_likelihood$get_likelihood(cf_train_offsite, "S", fold_number))
+      pS0 <- mean(self$observed_likelihood$get_likelihood(cf_train_offsite, "S", fold_number))
       
       cf_task_onsite <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$onsite, tmle_task$nrow)))
       cf_task_offsite <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$offsite, tmle_task$nrow)))
-      p1W <- self$observed_likelihood$get_likelihood(cf_task_onsite, "S", fold_number)
-      p0W <- self$observed_likelihood$get_likelihood(cf_task_offsite, "S", fold_number)
+      pS1W <- self$observed_likelihood$get_likelihood(cf_task_onsite, "S", fold_number)
+      pS0W <- self$observed_likelihood$get_likelihood(cf_task_offsite, "S", fold_number)
       
-      pN <- self$observed_likelihood$get_likelihoods(tmle_task, "N", fold_number)
+      pF <- self$observed_likelihood$get_likelihoods(tmle_task, "F", fold_number)
       # TODO: make bound configurable
       pN <- bound(pN, 0.005)
       
-      pA_c <- self$observed_likelihood$get_likelihoods(tmle_task, "A_c", fold_number)
+      pC <- self$observed_likelihood$get_likelihoods(tmle_task, "C", fold_number)
       
       time <- tmle_task$time
       id <- tmle_task$id
       long_order <- order(id,time)
       
-      I1_mat <- self$long_to_mat(I1,id,time)
-      p0_mat <- self$long_to_mat(p0,id,time)
-      p1W_mat <- self$long_to_mat(p1W,id,time)
-      p0W_mat <- self$long_to_mat(p0W,id,time)
-      t_mat <- self$long_to_mat(time,id,time)
+      IS1_mat <- long_to_mat(IS1,id,time)
+      pS0_mat <- long_to_mat(pS0,id,time)
+      pS1W_mat <- long_to_mat(pS1W,id,time)
+      pS0W_mat <- long_to_mat(pS0W,id,time)
+      t_mat <- long_to_mat(time,id,time)
       
-      pN_mat <- self$long_to_mat(pN,id,time)
-      pA_c_mat <- self$long_to_mat(pA_c,id,time)
-      SN_mat <- self$hm_to_sm(pN_mat)
-      SA_c_mat <- self$hm_to_sm(pA_c_mat)
+      pF_mat <- long_to_mat(pF,id,time)
+      pC_mat <- long_to_mat(pC,id,time)
+      sF_mat <- dm_to_sm(pF_mat)
+      sC_mat <- dm_to_sm(pC_mat)
       
       ks <- sort(unique(time))
       
       hk_all <- lapply(ks,function(k){
         Ikt <- k <= t_mat
-        SN_mat_k <- matrix(SN_mat[,k],nrow=nrow(t_mat),ncol=ncol(t_mat))
-        SA_c_mat_k <- matrix(SA_c_mat[,k],nrow=nrow(t_mat),ncol=ncol(t_mat))
-        hk <- -1 * ((I1*p0W*Ikt)/(p1W*p0*SA_c_mat_k))*(SN_mat/SN_mat_k)
+        sF_mat_k <- matrix(sF_mat[,k],nrow=nrow(t_mat),ncol=ncol(t_mat))
+        sC_mat_k <- matrix(sC_mat[,k],nrow=nrow(t_mat),ncol=ncol(t_mat))
+        hk <- -1 * (IS1/pS1W)*(pS0W/pS0)*(Ikt/sC_mat_k)*(sF_mat/sF_mat_k)
       })
       
       # TODO: this might need to be reordered
@@ -114,7 +102,7 @@ Param_SOT <- R6Class(
       if(subset_times & !is.null(self$target_times)){
         H1[,!(ks%in%self$target_times)] = 0
       }
-      return(list(N = H1))
+      return(list(F = H1))
     },
     clever_covariates = function(tmle_task, fold_number = "full"){
       self$clever_covariates_internal(tmle_task, fold_number, subset_times = TRUE)
@@ -128,30 +116,29 @@ Param_SOT <- R6Class(
       # TODO: return format
       # TODO: share work between this and the IC code
       H1 <- self$clever_covariates_internal(tmle_task, fold_number, subset_times = FALSE)[[self$outcome_node]]
-      I0 <- self$cf_likelihood_offsite$get_likelihoods(tmle_task, "S", fold_number)
+      IS0 <- self$cf_likelihood_offsite$get_likelihoods(tmle_task, "S", fold_number)
       
       cf_task_onsite <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$onsite, tmle_task$nrow)))
-      pN1 <- self$observed_likelihood$get_likelihood(cf_task_onsite, self$outcome_node, fold_number)
+      pFS1 <- self$observed_likelihood$get_likelihood(cf_task_onsite, self$outcome_node, fold_number)
       
       cf_train_offsite <- training_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$offsite, training_task$nrow)))
-      p0 <- mean(self$observed_likelihood$get_likelihood(cf_train_offsite, "S", fold_number))
+      pS0 <- mean(self$observed_likelihood$get_likelihood(cf_train_offsite, "S", fold_number))
       
       time <- tmle_task$time
       id <- tmle_task$id
       
       # TODO: make bound configurable
-      pN1 <- bound(pN1, 0.005)
-      pN1_mat <- self$long_to_mat(pN1,id,time)
-      SN1_mat <- self$hm_to_sm(pN1_mat)
-      psi <- colMeans(SN1_mat)
-      T_tilde <- tmle_task$get_tmle_node("T_tilde")
-      Delta <- tmle_task$get_tmle_node("Delta")
+      pFS1 <- bound(pFS1, 0.005)
+      pFS1_mat <- long_to_mat(pFS1,id,time)
+      sFS1_mat <- dm_to_sm(pFS1_mat)
+      psi <- colMeans(sFS1_mat)
+      T_tilde <- tmle_task$get_tmle_node("T")
+      Delta <- tmle_task$get_tmle_node("D")
       k <- time
-      Ittkd <- (T_tilde == k) & (Delta==1)
-      Ittk <- (T_tilde >= k)
+      Fail <- (T_tilde == k) & (Delta==1)
+      ITk <- (T_tilde >= k)
       
-      resid <- as.vector(Ittkd - (Ittk * pN1))
-      D1_tk <- H1*resid
+      D1_tk <- H1*as.vector(Fail - (ITk * pFS1))
       
       # zero out entries that don't contribute to sum
       ts <- sort(unique(k))
@@ -165,17 +152,17 @@ Param_SOT <- R6Class(
       D1 <- as.matrix(D1[,-1,with=FALSE])
       
       psi_mat <- matrix(psi,nrow=nrow(D1),ncol=ncol(D1),byrow=TRUE)
-      I0_mat <- self$long_to_mat(I0,id,time)
-      p0_mat <- self$long_to_mat(p0,id,time)
-      D2 <- (I0/p0)*(SN1_mat - psi_mat)
+      IS0_mat <- long_to_mat(IS0,id,time)
+      pS0_mat <- long_to_mat(pS0,id,time)
+      D2 <- (IS0/pS0)*(sFS1_mat - psi_mat)
       
-      IC <- D1+D2
+      IC_mat <- D1 + D2
       
       # copy IC to make it match the observation structure
       # TODO: consider if this is the best approach
       IC_id <- sort(unique(id))
-      IC_long <- IC[match(id,IC_id),]
-      result <- list(psi = psi, IC = IC_long)
+      IC <- IC_mat[match(id,IC_id),]
+      result <- list(psi = psi, IC = IC)
       return(result)
     }
   ),

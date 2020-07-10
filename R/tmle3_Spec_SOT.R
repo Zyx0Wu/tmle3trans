@@ -21,13 +21,13 @@ tmle3_Spec_SOT <- R6Class(
     make_tmle_task = function(data, node_list, ...) {
       variable_types <- self$options$variable_types
 
-      tmle_task <- survival_tr_task(data, node_list, variable_types)
+      tmle_task <- survival_task(data, node_list, survival_o_npsem, variable_types)
 
       return(tmle_task)
     },
 
     make_initial_likelihood = function(tmle_task, learner_list = NULL) {
-      likelihood <- survival_tr_likelihood(tmle_task, learner_list)
+      likelihood <- survival_o_likelihood(tmle_task, learner_list)
       return(likelihood)
     },
 

@@ -6,37 +6,37 @@
 #' @param data a \code{data.frame}, or \code{data.table} containing data for use in estimation
 #' @param node_list a list of character vectors, listing the variables that comprise each node
 #' @param variable_types a list of variable types, one for each node. If missing, variable types will be guessed
-#' @param tmle_task a \code{\link{tmle3_Task}} as constructed via \code{survival_tr_task}
+#' @param tmle_task a \code{\link{tmle3_Task}} as constructed via \code{survival_task}
 #' @param learner_list a list of sl3 learners, one for A and one for Y to be used for likelihood estimation
 #' @param ... extra arguments.
 #' @export
-#' @rdname survival_tr
-survival_tr_npsem <- function(node_list, variable_types = NULL) {
+#' @rdname survival_trans
+survival_o_npsem <- function(node_list, variable_types = NULL) {
   # make the tmle task
   
   # define censoring (lost to followup node)
   censoring <- define_node("pre_failure", node_list$pre_failure, c())
   npsem <- list(
     # TODO: causal relation, handle t_max
-    define_node("W", node_list$W, variable_type = variable_types$W),
-    define_node("S", node_list$S, c("W"), variable_type = variable_types$S),
-    define_node("T_tilde", node_list$T_tilde, c("W"), variable_type = variable_types$T_tilde),
-    define_node("Delta", node_list$Delta, variable_type = variable_types$Delta),
+    define_node("W", node_list[["W"]], variable_type = variable_types[["W"]]),
+    define_node("S", node_list[["S"]], c("W"), variable_type = variable_types[["S"]]),
+    define_node("T", node_list[["T"]], c("W"), variable_type = variable_types[["T"]]),
+    define_node("D", node_list[["D"]], variable_type = variable_types[["D"]]),
     censoring,
     # TODO: remove t parent, handle in get_regression
-    define_node("N", node_list$N, c("W"), variable_type = variable_types$N, censoring_node=censoring),
-    define_node("A_c", node_list$A_c, c("W"), variable_type = variable_types$A_c, censoring_node=censoring)   
+    define_node("F", node_list[["F"]], c("W"), variable_type = variable_types[["F"]], censoring_node=censoring),
+    define_node("C", node_list[["C"]], c("W"), variable_type = variable_types[["C"]], censoring_node=censoring)   
   )
   
   return(npsem)
 }
 
 #' @export
-#' @rdname survival_tr
-survival_tr_task <- function(data, node_list, variable_types = NULL, ...) {
+#' @rdname survival_trans
+survival_task <- function(data, node_list, make_npsem, variable_types = NULL, ...) {
   setDT(data)
   
-  npsem <- survival_tr_npsem(node_list, variable_types)
+  npsem <- make_npsem(node_list, variable_types)
   
   if (!is.null(node_list$id)) {
     tmle_task <- tmle3_Task$new(data, npsem = npsem, id = node_list$id, time = node_list$time, ...)
@@ -48,8 +48,8 @@ survival_tr_task <- function(data, node_list, variable_types = NULL, ...) {
 }
 
 #' @export
-#' @rdname survival_tr
-survival_tr_likelihood  <- function(tmle_task, learner_list) {
+#' @rdname survival_trans
+survival_o_likelihood  <- function(tmle_task, learner_list) {
   # covariates
   # TODO: whether remove duplicates for LF_emp
   W_factor <- define_lf(LF_emp, "W")
@@ -70,24 +70,17 @@ survival_tr_likelihood  <- function(tmle_task, learner_list) {
   # TODO: modify get_regression_task and LF_fit for time variance
   # TODO: whether need bound
   outcome_bound <- 0.025
-  N_factor <- define_lf(LF_fit_site, "N", learner = learner_list[["N"]],
+  F_factor <- define_lf(LF_fit_site, "F", learner = learner_list[["F"]],
                         is_time_variant = TRUE, bound = outcome_bound,
                         type = "mean")
-  A_c_factor <- define_lf(LF_fit, "A_c", learner = learner_list[["A_c"]],
-                          is_time_variant = TRUE, bound = outcome_bound,
-                          type = "mean")
-  # N_factor <- define_lf(LF_fit, "N", learner = learner_list[["N"]], 
-  #                       is_time_variant = TRUE,
-  #                       type = "mean")
-  # A_c_factor <- define_lf(LF_fit, "A_c", learner = learner_list[["A_c"]], 
-  #                         is_time_variant = TRUE,
-  #                         type = "mean")
+  C_factor <- define_lf(LF_fit, "C", learner = learner_list[["C"]],
+                        is_time_variant = TRUE, bound = outcome_bound,
+                        type = "mean")
   
-  factor_list <- list(W_factor, S_factor, N_factor, A_c_factor)
+  factor_list <- list(W_factor, S_factor, F_factor, C_factor)
   
   # TODO: check
-  likelihood_def <- Likelihood$new(factor_list)
-  likelihood <- likelihood_def$train(tmle_task)
+  likelihood <- Likelihood$new(factor_list)$train(tmle_task)
   return(likelihood)
 }
 

@@ -18,7 +18,7 @@ tmle3_Spec_AET <- R6Class(
     },
     make_tmle_task = function(data, node_list, ...) {
       variable_types <- self$options$variable_types
-      tmle_task <- point_e_task(data, node_list, variable_types)
+      tmle_task <- point_task(data, node_list, point_e_npsem, variable_types)
 
       return(tmle_task)
     },

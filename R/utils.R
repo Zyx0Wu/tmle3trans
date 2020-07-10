@@ -17,6 +17,13 @@ wald_ci <- function(est, se, level = 0.95, q = NULL) {
   return(cbind(ci_low, ci_high))
 }
 
+#' L2 Loss
+#' 
+#' @export
+l2_loss = function(x, y) {
+  return(sqrt(sum((x - y)^2)) / length(x))
+}
+
 #' Expit
 #' 
 #' @param x x
