@@ -73,7 +73,7 @@ survival_o_likelihood  <- function(tmle_task, learner_list) {
   F_factor <- define_lf(LF_fit_site, "F", learner = learner_list[["F"]],
                         is_time_variant = TRUE, bound = outcome_bound,
                         type = "mean")
-  C_factor <- define_lf(LF_fit, "C", learner = learner_list[["C"]],
+  C_factor <- define_lf(LF_fit_site, "C", learner = learner_list[["C"]],
                         is_time_variant = TRUE, bound = outcome_bound,
                         type = "mean")
   

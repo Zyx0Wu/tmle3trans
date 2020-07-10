@@ -83,6 +83,6 @@ Param_AET <- R6Class(
   private = list(
     .type = "TMLE_AET",
     .intervention = NULL,
-    .cf_likelihood_intervention = NULL,
+    .cf_likelihood_intervention = NULL
   )
 )

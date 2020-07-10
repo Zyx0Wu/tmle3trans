@@ -37,18 +37,14 @@ Param_SOT <- R6Class(
   classname = "Param_SOT",
   portable = TRUE,
   class = TRUE,
-  inherit = Param_base,
+  inherit = Param_AOT,
   public = list(
     initialize = function(observed_likelihood, target_times = NULL, 
                           onsite = 1, offsite = 0, 
                           ..., 
                           outcome_node = "F") {
       # TODO: check outcome_node, current I(T<=t, delta=1), need I(T=t, delta=1)
-      super$initialize(observed_likelihood, ..., outcome_node = outcome_node)
-      private$.onsite <- onsite
-      private$.offsite <- offsite
-      private$.cf_likelihood_onsite <- make_CF_Likelihood(observed_likelihood, define_lf(LF_static, "S", value = self$onsite))
-      private$.cf_likelihood_offsite <- make_CF_Likelihood(observed_likelihood, define_lf(LF_static, "S", value = self$offsite))
+      super$initialize(observed_likelihood, onsite, offsite, ..., outcome_node = outcome_node)
       private$.target_times <- target_times
     },
     clever_covariates_internal = function(tmle_task = NULL, fold_number = "full", subset_times = FALSE) {
@@ -68,7 +64,7 @@ Param_SOT <- R6Class(
       
       pF <- self$observed_likelihood$get_likelihoods(tmle_task, "F", fold_number)
       # TODO: make bound configurable
-      pN <- bound(pN, 0.005)
+      pF <- bound(pF, 0.005)
       
       pC <- self$observed_likelihood$get_likelihoods(tmle_task, "C", fold_number)
       
@@ -139,7 +135,7 @@ Param_SOT <- R6Class(
       ITk <- (T_tilde >= k)
       
       D1_tk <- H1*as.vector(Fail - (ITk * pFS1))
-      
+      browser()
       # zero out entries that don't contribute to sum
       ts <- sort(unique(k))
       t_mat <- matrix(ts,nrow=nrow(D1_tk),ncol=ncol(D1_tk),byrow = TRUE)
@@ -169,14 +165,8 @@ Param_SOT <- R6Class(
   active = list(
     # TODO: modify
     name = function() {
-      param_form <- sprintf("E[E(%s | W, trial) | reality]", self$outcome_node)
+      param_form <- sprintf("E[P(T > t | W, trial) | reality]")
       return(param_form)
-    },
-    cf_likelihood = function() {
-      return(private$.cf_likelihood)
-    },
-    intervention_list = function() {
-      return(self$cf_likelihood$intervention_list)
     },
     update_nodes = function() {
       return(self$outcome_node)
@@ -187,7 +177,6 @@ Param_SOT <- R6Class(
   ),
   private = list(
     .type = "TMLE_SOT",
-    .cf_likelihood = NULL,
     .supports_outcome_censoring = TRUE,
     .target_times = NULL
   )

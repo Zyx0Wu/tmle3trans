@@ -61,6 +61,7 @@ Inherits from \code{\link{LF_base}}; see that page for documentation on likeliho
 \item \out{<span class="pkg-link" data-pkg="tmle3" data-topic="LF_base" data-id="print">}\href{../../tmle3/html/LF_base.html#method-print}{\code{tmle3::LF_base$print()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="tmle3" data-topic="LF_fit" data-id="get_density">}\href{../../tmle3/html/LF_fit.html#method-get_density}{\code{tmle3::LF_fit$get_density()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="tmle3" data-topic="LF_fit" data-id="get_mean">}\href{../../tmle3/html/LF_fit.html#method-get_mean}{\code{tmle3::LF_fit$get_mean()}}\out{</span>}
+\item \out{<span class="pkg-link" data-pkg="tmle3" data-topic="LF_fit" data-id="sample">}\href{../../tmle3/html/LF_fit.html#method-sample}{\code{tmle3::LF_fit$sample()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="tmle3" data-topic="LF_fit" data-id="train">}\href{../../tmle3/html/LF_fit.html#method-train}{\code{tmle3::LF_fit$train()}}\out{</span>}
 }
 \out{</details>}
@@ -73,8 +74,8 @@ Inherits from \code{\link{LF_base}}; see that page for documentation on likeliho
 \if{html}{\out{<div class="r">}}\preformatted{LF_fit_site$new(
   name,
   learner,
-  ...,
   site = 1,
+  ...,
   site_node = "S",
   type = "density"
 )}\if{html}{\out{</div>}}
