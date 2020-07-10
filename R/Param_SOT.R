@@ -1,6 +1,7 @@
 #' Survival Outcome Transportation
 #'
 #' @importFrom R6 R6Class
+#' @import data.table
 #' @importFrom uuid UUIDgenerate
 #' @importFrom methods is
 #' @family Parameters
