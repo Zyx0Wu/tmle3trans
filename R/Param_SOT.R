@@ -136,8 +136,8 @@ Param_SOT <- R6Class(
       ITk <- (T_tilde >= k)
       
       D1_tk <- H1*as.vector(Fail - (ITk * pFS1))
-      browser()
       # zero out entries that don't contribute to sum
+      
       ts <- sort(unique(k))
       t_mat <- matrix(ts,nrow=nrow(D1_tk),ncol=ncol(D1_tk),byrow = TRUE)
       Itk <- (k<=t_mat)
