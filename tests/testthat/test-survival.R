@@ -91,7 +91,7 @@ updater <- tmle3_Update_survival$new(
   delta_epsilon = 1e-2,
   fit_method = "l2",
   use_best = TRUE,
-  verbose=FALSE
+  verbose = TRUE
 )
 #updater <- tmle3_Update$new(
 #  constrain_step = TRUE, one_dimensional = TRUE, 
@@ -113,6 +113,6 @@ psi0_n <- tmle_fit_manual$summary$tmle_est
 # TODO: check
 t_surv1 <- simulated$true_surv1(k_grid - 1)
 t_surv0 <- simulated$true_surv0(k_grid - 1)
-l2_diff(psi0_0, t_surv0)
-l2_diff(psi0_n, t_surv0)
+l2_loss(psi0_0, t_surv0)
+l2_loss(psi0_n, t_surv0)
 

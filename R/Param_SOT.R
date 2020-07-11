@@ -152,7 +152,7 @@ Param_SOT <- R6Class(
       IS0_mat <- long_to_mat(IS0,id,time)
       pS0_mat <- long_to_mat(pS0,id,time)
       D2 <- (IS0/pS0)*(sFS1_mat - psi_mat)
-      
+
       IC_mat <- D1 + D2
       
       # copy IC to make it match the observation structure
