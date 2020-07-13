@@ -34,26 +34,42 @@ data0 <- data[data[[node_list$S]] == 0, ]
 data1 <- data[data[[node_list$S]] == 1, ]
 
 ### observed mean ###
-Y0 <- data0[ ,colnames(data0) %in% node_list$Y, with=FALSE]
-mean <- mean(as.matrix(Y0))
-std <- sd(as.matrix(Y0)) / sqrt(length(as.matrix(Y0)))
+YS0 <- data0[ ,colnames(data0) %in% node_list$Y, with=FALSE]
+mean <- mean(as.matrix(YS0))
+sd <- sd(as.matrix(YS0)) / sqrt(length(as.matrix(YS0)))
 
-### 1. naive ###
-W1 <- data1[ ,colnames(data1) %in% node_list$W, with=FALSE]
-Y1 <- data1[ ,colnames(data1) %in% node_list$Y, with=FALSE]
-W0 <- data0[ ,colnames(data0) %in% node_list$W, with=FALSE]
+### glm fit ###
+WS1 <- data1[ ,colnames(data1) %in% node_list$W, with=FALSE]
+YS1 <- data1[ ,colnames(data1) %in% node_list$Y, with=FALSE]
+WS0 <- data0[ ,colnames(data0) %in% node_list$W, with=FALSE]
 
-fit <- glm(paste(node_list$Y, "~", paste(node_list$W, collapse = " + ")),
-           data = cbind(W1, Y1))
-est <- predict(fit, newdata = W0, type = 'response', se.fit = TRUE)
-psis <- predict(fit, newdata = W0, type = 'response', se.fit = TRUE)$fit
-ses <- predict(fit, newdata = W0, type = 'response', se.fit = TRUE)$se.fit
+fit_s <- glm(paste(node_list$S, "~", paste(node_list$W, collapse = " + ")),
+             family = binomial(), data = cbind(W, S))
+fit_y <- glm(paste(node_list$Y, "~", paste(node_list$W, collapse = " + ")),
+             family = gaussian(), data = cbind(WS1, YS1))
+beta_s_cov <- as.matrix(vcov(fit_s))
+beta_y_cov <- as.matrix(vcov(fit_y))
 
-psi <- mean(psis)
-se <- sqrt(mean(ses^2)) / sqrt(length(ses))
-CI95 <- sprintf("(%f, %f)", psi - 1.96*se, psi + 1.96*se)
+### 1. Plug-In ###
+IS0EYW <- predict(fit_y, newdata = WS0, type = 'response')
 
-### 2. TMLE ###
+plugin_psi <- mean(IS0EYW)
+plugin_se <- sqrt(deltaMeanOLS(WS0, IS0EYW, beta_y_cov))
+plugin_CI95 <- sprintf("(%f, %f)", plugin_psi - 1.96*plugin_se, plugin_psi + 1.96*plugin_se)
+
+### 2. IPTW ###
+pS1W <- predict(fit_s, newdata = W, type = 'response')
+IS1pS1W <- predict(fit_s, newdata = WS1, type = 'response')
+
+IS1pS0W <- 1 - IS1pS1W
+pS0 <- 1 - mean(pS1W)
+
+IPTW_psi <- mean(IS1pS0W/pS0 * YS1$Y/IS1pS1W)
+#TODO: IPTW delta method
+#IPTW_se <- ???
+#IPTW_CI95 <- sprintf("(%f, %f)", IPTW_psi - 1.96*IPTW_se, IPTW_psi + 1.96*IPTW_se)
+
+### 3. TML ###
 tmle_spec <- tmle_AET(1, 0)
 
 # define data

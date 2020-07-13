@@ -40,3 +40,43 @@ logit <- function(x) {
   return(log(x/(1-x)))
 }
 
+
+#' Standard Error: Mean of Logistic Regression
+#' 
+#' @param x covariates
+#' @param y outcomes
+#' @param cov covariance matrix of coefficients
+#' @export
+deltaMeanLogistic <- function(x, y, cov) {
+  if (ncol(x)==(nrow(cov)-1)) {
+    x <- cbind(rep(1, length(y)), x)
+  }
+  if (!all(y<=1 & y>=0)) {
+    stop("All ys should within [0, 1].")
+  }
+  if (!(length(y)==nrow(x)) | !(ncol(x)==nrow(cov))) {
+    stop("Input dimensions do not match.")
+  }
+  
+  deriv <- colMeans(y*(1-y) * x)
+  return(deriv%*%cov%*%deriv)
+}
+
+#' Standard Error: Mean of OLS Regression
+#' 
+#' @param x covariates
+#' @param y outcomes
+#' @param cov covariance matrix of coefficients
+#' @export
+deltaMeanOLS <- function(x, y, cov) {
+  if (ncol(x)==(nrow(cov)-1)) {
+    x <- cbind(rep(1, length(y)), x)
+  }
+  if (!(length(y)==nrow(x)) | !(ncol(x)==nrow(cov))) {
+    stop("Input dimensions do not match.")
+  }
+  
+  deriv <- colMeans(x)
+  return(deriv%*%cov%*%deriv)
+}
+

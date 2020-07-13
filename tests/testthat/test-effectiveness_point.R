@@ -29,22 +29,22 @@ Y0 <- data0[ ,colnames(data0) %in% node_list$Y, with=FALSE]
 mean <- mean(as.matrix(Y0))
 std <- sd(as.matrix(Y0)) / sqrt(length(as.matrix(Y0)))
 
-### 1. naive ###
+### 1. Naive ###
 W1 <- data1[ ,colnames(data1) %in% node_list$W, with=FALSE]
 Y1 <- data1[ ,colnames(data1) %in% node_list$Y, with=FALSE]
 W0 <- data0[ ,colnames(data0) %in% node_list$W, with=FALSE]
 
 fit <- glm(paste(node_list$Y, "~", paste(node_list$W, collapse = " + ")),
-           data = cbind(W1, Y1))
-est <- predict(fit, newdata = W0, type = 'response', se.fit = TRUE)
-psis <- predict(fit, newdata = W0, type = 'response', se.fit = TRUE)$fit
-ses <- predict(fit, newdata = W0, type = 'response', se.fit = TRUE)$se.fit
+           family = gaussian(), data = cbind(WS1, YS1))
+beta_cov <- as.matrix(vcov(fit_y))
+
+psis <- predict(fit, newdata = W0, type = 'response')
 
 psi <- mean(psis)
-se <- sqrt(mean(ses^2)) / sqrt(length(ses))
+se <- sqrt(deltaMeanOLS(W0, psis, beta_cov))
 CI95 <- sprintf("(%f, %f)", psi - 1.96*se, psi + 1.96*se)
 
-### 2. TMLE ###
+### 2. TML ###
 tmle_spec <- tmle_AET(1, 0)
 
 # define data
