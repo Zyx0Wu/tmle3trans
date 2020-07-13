@@ -70,7 +70,7 @@ IPTW_psi <- mean(IS1pS0W/pS0 * YS1$Y/IS1pS1W)
 #IPTW_CI95 <- sprintf("(%f, %f)", IPTW_psi - 1.96*IPTW_se, IPTW_psi + 1.96*IPTW_se)
 
 ### 3. TML ###
-tmle_spec <- tmle_AET(1, 0)
+tmle_spec <- tmle_AOT(1, 0)
 
 # define data
 tmle_task <- tmle_spec$make_tmle_task(data, node_list)

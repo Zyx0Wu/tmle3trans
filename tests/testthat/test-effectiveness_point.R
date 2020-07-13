@@ -45,7 +45,7 @@ se <- sqrt(deltaMeanOLS(W0, psis, beta_cov))
 CI95 <- sprintf("(%f, %f)", psi - 1.96*se, psi + 1.96*se)
 
 ### 2. TML ###
-tmle_spec <- tmle_AET(1, 0)
+tmle_spec <- tmle_AOT(1, 0)
 
 # define data
 tmle_task <- tmle_spec$make_tmle_task(data, node_list)
