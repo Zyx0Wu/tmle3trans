@@ -2,7 +2,7 @@ context("Test - Numeric Check")
 
 library(sl3)
 library(tmle3)
-library(tmle3tr)
+library(tmle3trans)
 library(uuid)
 library(assertthat)
 library(testthat)

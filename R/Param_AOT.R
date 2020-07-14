@@ -71,7 +71,7 @@ Param_AOT <- R6Class(
       pS1W <- self$observed_likelihood$get_likelihood(cf_task_onsite, "S", fold_number)
       pS0W <- self$observed_likelihood$get_likelihood(cf_task_offsite, "S", fold_number)
 
-      H1 <- IS1 / pS1W * pS0W / pS0
+      H1 <- IS1 / prob_clip(pS1W) * pS0W / prob_clip(pS0)
       return(list(Y = H1))
     },
     estimates = function(tmle_task = NULL, fold_number = "full") {
@@ -92,8 +92,8 @@ Param_AOT <- R6Class(
       cf_train_offsite <- training_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$offsite, training_task$nrow)))
       pS0 <- mean(self$observed_likelihood$get_likelihood(cf_train_offsite, "S", fold_number))
 
-      psi <- mean(IS0/pS0 * EYS1)
-      IC <- H1 * (Y - EYS) + IS0/pS0 * (EYS1 - psi)
+      psi <- mean(IS0/prob_clip(pS0) * EYS1)
+      IC <- H1 * (Y - EYS) + IS0/prob_clip(pS0) * (EYS1 - psi)
       return(list(psi = psi, IC = IC))
     }
   ),

@@ -2,7 +2,7 @@ context("Test - Effectiveness")
 
 library(sl3)
 library(tmle3)
-library(tmle3tr)
+library(tmle3trans)
 library(uuid)
 library(assertthat)
 library(data.table)
@@ -41,7 +41,10 @@ beta_cov <- as.matrix(vcov(fit_y))
 psis <- predict(fit, newdata = W0, type = 'response')
 
 psi <- mean(psis)
-se <- sqrt(deltaMeanOLS(W0, psis, beta_cov))
+# delta method:
+#se <- sqrt(deltaMeanOLS(W0, psis, beta_cov))
+# by EIC:
+se <- sd(psis)
 CI95 <- sprintf("(%f, %f)", psi - 1.96*se, psi + 1.96*se)
 
 ### 2. TML ###

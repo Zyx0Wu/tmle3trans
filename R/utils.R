@@ -17,6 +17,23 @@ wald_ci <- function(est, se, level = 0.95, q = NULL) {
   return(cbind(ci_low, ci_high))
 }
 
+#' Probability Clipping
+#' 
+#' @export
+prob_clip = function(ps, clip=.05) {
+  if (!all(ps<=1 & ps>=0)) {
+    stop("All ps should within [0, 1].")
+  }
+  
+  ps_clip <- c()
+  for (p in ps) {
+    if (1-p < clip) ps_clip <- c(ps_clip, 1-clip)
+    else if (p < clip) ps_clip <- c(ps_clip, clip)
+    else ps_clip <- c(ps_clip, p)
+  }
+  return(ps_clip)
+}
+
 #' L2 Loss
 #' 
 #' @export
