@@ -32,7 +32,7 @@ tmle3_Spec_SOT <- R6Class(
     },
 
     make_params = function(tmle_task, likelihood) {
-      tmle_params <- define_param(Param_SOT, targeted_likelihood,
+      tmle_params <- define_param(Param_SOT, likelihood,
                                   target_times = self$options$target_times,
                                   onsite = self$options$onsite,
                                   offsite = self$options$offsite)

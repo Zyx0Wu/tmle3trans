@@ -27,7 +27,7 @@ tmle3_Spec_AET <- R6Class(
 
       return(likelihood)
     },
-    make_params = function(tmle_task, targeted_likelihood) {
+    make_params = function(tmle_task, likelihood) {
       # todo: export and use sl3:::get_levels
       A_vals <- tmle_task$get_tmle_node("A")
       if (is.factor(A_vals)) {
@@ -37,7 +37,7 @@ tmle3_Spec_AET <- R6Class(
         A_levels <- sort(unique(A_vals))
       }
       tmle_params <- lapply(A_levels, function(A_level) {
-        tmle_param <- define_param(Param_AET, targeted_likelihood, A_level,
+        tmle_param <- define_param(Param_AET, likelihood, A_level,
                                    onsite = self$options$onsite,
                                    offsite = self$options$offsite)
         return(tmle_param)

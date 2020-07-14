@@ -27,8 +27,8 @@ tmle3_Spec_AOT <- R6Class(
 
       return(likelihood)
     },
-    make_params = function(tmle_task, targeted_likelihood) {
-      tmle_params <- define_param(Param_AOT, targeted_likelihood,
+    make_params = function(tmle_task, likelihood) {
+      tmle_params <- define_param(Param_AOT, likelihood,
                                   onsite = self$options$onsite,
                                   offsite = self$options$offsite)
       return(tmle_params)
