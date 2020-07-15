@@ -61,7 +61,7 @@ Defines a TMLE with Average Effect Transportation
 \if{latex}{\out{\hypertarget{method-make_params}{}}}
 \subsection{Method \code{make_params()}}{
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{tmle3_Spec_AET$make_params(tmle_task, targeted_likelihood)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{tmle3_Spec_AET$make_params(tmle_task, likelihood)}\if{html}{\out{</div>}}
 }
 
 }

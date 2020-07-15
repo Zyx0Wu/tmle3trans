@@ -57,8 +57,8 @@ IS1 <- S == 1
 pS0W <- 1 - pS1W
 pS0 <- mean(pS0W)
 
-iptw_psi <- mean(IS1/pS1W * pS0W/pS0 * Y)
-iptw_se <- sd(IS1/pS1W * pS0W/pS0 * Y)
+iptw_psi <- mean(IS1/prob_clip(pS1W) * pS0W/prob_clip(pS0) * Y)
+iptw_se <- sd(IS1/prob_clip(pS1W) * pS0W/prob_clip(pS0) * Y)
 iptw_CI95 <- sprintf("(%f, %f)", iptw_psi - 1.96*iptw_se, iptw_psi + 1.96*iptw_se)
 
 ### 3. TML ###
