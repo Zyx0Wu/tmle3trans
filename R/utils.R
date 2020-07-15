@@ -18,31 +18,21 @@ wald_ci <- function(est, se, level = 0.95, q = NULL) {
 }
 
 #' Probability Clipping
-#' 
+#'
 #' @export
 prob_clip = function(ps, clip=.05) {
-  if (!all(ps<=1 & ps>=0)) {
-    stop("All ps should within [0, 1].")
-  }
-  
-  ps_clip <- c()
-  for (p in ps) {
-    if (1-p < clip) ps_clip <- c(ps_clip, 1-clip)
-    else if (p < clip) ps_clip <- c(ps_clip, clip)
-    else ps_clip <- c(ps_clip, p)
-  }
-  return(ps_clip)
+pmin(pmax(ps,clip),1-clip)
 }
 
 #' L2 Loss
-#' 
+#'
 #' @export
 l2_loss = function(x, y) {
   return(sqrt(sum((x - y)^2)) / length(x))
 }
 
 #' Expit
-#' 
+#'
 #' @param x x
 #' @export
 expit <- function(x) {
@@ -50,7 +40,7 @@ expit <- function(x) {
 }
 
 #' Logit
-#' 
+#'
 #' @param x x
 #' @export
 logit <- function(x) {
@@ -59,7 +49,7 @@ logit <- function(x) {
 
 
 #' Standard Error: Mean of Logistic Regression
-#' 
+#'
 #' @param x covariates
 #' @param y outcomes
 #' @param cov covariance matrix of coefficients
@@ -74,13 +64,13 @@ deltaMeanLogistic <- function(x, y, cov) {
   if (!(length(y)==nrow(x)) | !(ncol(x)==nrow(cov))) {
     stop("Input dimensions do not match.")
   }
-  
+
   deriv <- colMeans(y*(1-y) * x)
   return(deriv%*%cov%*%deriv)
 }
 
 #' Standard Error: Mean of OLS Regression
-#' 
+#'
 #' @param x covariates
 #' @param y outcomes
 #' @param cov covariance matrix of coefficients
@@ -92,7 +82,7 @@ deltaMeanOLS <- function(x, y, cov) {
   if (!(length(y)==nrow(x)) | !(ncol(x)==nrow(cov))) {
     stop("Input dimensions do not match.")
   }
-  
+
   deriv <- colMeans(x)
   return(deriv%*%cov%*%deriv)
 }
