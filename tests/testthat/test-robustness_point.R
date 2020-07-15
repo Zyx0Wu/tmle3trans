@@ -59,7 +59,7 @@ naive_psi <- mean(IS0EYW)
 #naive_se <- sqrt(deltaMeanOLS(WS0, IS0EYW, beta_y_cov))
 # by EIC:
 naive_se <- sd(IS0EYW)
-naive_CI95 <- sprintf("(%f, %f)", naive_psi - 1.96*naive_se, naive_psi + 1.96*naive_se)
+naive_CI95 <- wald_ci(naive_psi, naive_se)
 
 ### 2. IPTW ###
 pS1W <- predict(fit_s, newdata = W, type = 'response')
@@ -74,7 +74,7 @@ iptw_psi <- mean(IS1/prob_clip(pS1W) * pS0W/prob_clip(pS0) * Y)
 #iptw_se <- ???
 # by EIC:
 iptw_se <- sd(IS1/prob_clip(pS1W) * pS0W/prob_clip(pS0) * (Y - iptw_psi))
-iptw_CI95 <- sprintf("(%f, %f)", iptw_psi - 1.96*iptw_se, iptw_psi + 1.96*iptw_se)
+iptw_CI95 <- wald_ci(iptw_psi, iptw_se)
 
 ### 3. TML ###
 tmle_spec <- tmle_AOT(1, 0)
@@ -106,5 +106,5 @@ tmle_psi <- tmle_summary$tmle_est
 tmle_se <- tmle_summary$se
 tmle_epsilon <- updater$epsilons[[1]]$Y
 
-tmle_CI95 <- sprintf("(%f, %f)", tmle_psi - 1.96*tmle_se, tmle_psi + 1.96*tmle_se)
+tmle_CI95 <- wald_ci(tmle_psi, tmle_se)
 

@@ -21,7 +21,7 @@ wald_ci <- function(est, se, level = 0.95, q = NULL) {
 #'
 #' @export
 prob_clip = function(ps, clip=.05) {
-pmin(pmax(ps,clip),1-clip)
+  return(pmin(pmax(ps,clip),1-clip))
 }
 
 #' L2 Loss
