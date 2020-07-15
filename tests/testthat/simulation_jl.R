@@ -72,14 +72,6 @@ simJL = function(n, biasS, biasY, wt=TRUE) {
 
   W <- select(data, node_list$W)
 
-  data0 <- filter(data, S==0)
-  data1 <- filter(data, S==1)
-
-  ### fit ###
-  WS1 = select(data1, node_list$W)
-  YS1 <- data1$Y
-  WS0 <- select(data0, node_list$W)
-
   s_dens <- function(w, bias=FALSE, n) prob_clip(expit(1.4 - 0.6 * w[1] - 2 * w[2] + 0.7 * w[3] + bias * n^(-0.3)))
   y_dens <- function(w, bias=FALSE, n) -1 - .5 * w[1] +
     .8 * w[2] + .2 * w[3] + bias * n^(-0.3)
@@ -88,20 +80,11 @@ simJL = function(n, biasS, biasY, wt=TRUE) {
   # note: not Plug-In
   Q = apply(W, 1, y_dens, bias = biasY, n = n)
 
-  naive_psi <- mean(QS0)
-  naive_psi
-
   S = data$S
   Y = data$Y
 
-  ###
-  ###
-  # use the delta method for inference here for naive_psi
-  ###
-  ###
-
   ### 2. IPTW ###
-  pS1W <- apply(W, 1, s_dens,n=n, bias=T)
+  pS1W <- apply(W, 1, s_dens,n=n, bias=biasS)
 
   pS0W <- 1 - pS1W
   pS0 <- mean(data$S==0)
@@ -113,7 +96,7 @@ simJL = function(n, biasS, biasY, wt=TRUE) {
   iptw_se <- sd(H1*(Y-iptw_psi_init))/sqrt(n)
   iptw_CI95 <- c(iptw_psi, iptw_psi - 1.96*iptw_se, iptw_psi + 1.96*iptw_se)
   iptw_CI95
-  browser()
+
   ### 3. TML ###
 
   tmle_psi_init = mean(Q[S==0])
@@ -143,8 +126,7 @@ simJL = function(n, biasS, biasY, wt=TRUE) {
 
   return(list(tmle =  tmle_CI95,
               iptw = iptw_CI95,
-              tmle_psi_init = tmle_psi_init,
-              naive_psi = naive_psi))
+              naive_psi_init = tmle_psi_init))
 }
 
 simJL(1000,T,T,F)
@@ -170,15 +152,15 @@ getres = function(res) {
   cov_eff = rbind(coverage, efficiency)
   cov_eff
 
-  mse = apply(res[,c(1,4,7,8)], 2, function(x) mean((x-Psi0)^2))
+  mse = apply(res[,c(1,4,7)], 2, function(x) mean((x-Psi0)^2))
   mse
 
-  ests = unlist(res[,c(1,4,7,8)])
+  ests = unlist(res[,c(1,4,7)])
   names(ests) = NULL
   ests
-  type = c(rep("tmle",n),
-           rep("iptw",n), rep("tmle_init",n),
-           rep("naive_psi", n))
+  L = length(ests)/3
+  type = c(rep("tmle",L),
+           rep("iptw",L), rep("naive_psi_init",L))
   type
   plotdf = data.frame(ests = ests, type = type)
   return(list(mse = mse, cov_eff = cov_eff, plotdf = plotdf))
@@ -192,7 +174,7 @@ results[1:2]
 
 sampling_dists = ggplot(results$plotdf, aes(x=ests, fill = type))+
   geom_density(alpha=.4)+geom_vline(xintercept=Psi0)+
-  xlim(-1.2,-.1)
+  xlim(-1.3,-.4)
 
 sampling_dists
 
