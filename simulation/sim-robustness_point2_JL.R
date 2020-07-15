@@ -92,7 +92,7 @@ simJL = function(n, biasS, biasY) {
   iptw_se <- sd(IS1/pS1W * pS0W/pS0 * data$Y)/sqrt(n)
   iptw_CI95 <- sprintf("(%f, %f)", iptw_psi - 1.96*iptw_se, iptw_psi + 1.96*iptw_se)
   iptw_CI95
-
+  browser()
   ### 3. TML ###
   tmle_spec <- tmle_AOT(1, 0)
 

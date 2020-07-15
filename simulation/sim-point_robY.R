@@ -1,5 +1,3 @@
-context("Test - Robustness Y")
-
 library(sl3)
 library(tmle3)
 library(tmle3trans)
@@ -67,8 +65,8 @@ seed_fit = function(seed) {
   # delta method:
   #se <- sqrt(deltaMeanOLS(WS0, IS0EYW, beta_y_cov))
   # by EIC:
-  se <- sd(IS0EYW)
-  CI95 <- sprintf("(%f, %f)", psi - 1.96*se, psi + 1.96*se)
+  se <- sd(IS0EYW)/sqrt(length(IS0EYW))
+  CI95 <- wald_ci(psi, se)
   
   ### 2. TMLE ###
   tmle_spec <- tmle_AOT(1, 0)
@@ -100,54 +98,71 @@ seed_fit = function(seed) {
   tmle_se <- tmle_summary$se
   tmle_epsilon <- updater$epsilons[[1]]$Y
   
-  tmle_CI95 <- sprintf("(%f, %f)", tmle_psi - 1.96*tmle_se, tmle_psi + 1.96*tmle_se)
+  tmle_CI95 <- wald_ci(tmle_psi, tmle_se)
   
   # MSE, coverage
   l2_diff_bench <- (psi - mean)^2
   l2_diff_tmle <- (tmle_psi - mean)^2
-  coverage_bench <- pnorm(psi + 1.96*se, mean = mean, sd = sd) - 
-    pnorm(psi - 1.96*se, mean = mean, sd = sd)
-  coverage_tmle <- pnorm(tmle_psi + 1.96*tmle_se, mean = mean, sd = sd) - 
-    pnorm(tmle_psi - 1.96*tmle_se, mean = mean, sd = sd)
+  coverage_bench <- pnorm(CI95[2], mean = mean, sd = sd) - 
+    pnorm(CI95[1], mean = mean, sd = sd)
+  coverage_tmle <- pnorm(tmle_CI95[2], mean = mean, sd = sd) - 
+    pnorm(tmle_CI95[1], mean = mean, sd = sd)
   
-  return(c(l2_diff_bench, l2_diff_tmle, coverage_bench, coverage_tmle))
+  return(c(psi, tmle_psi, l2_diff_bench, l2_diff_tmle, coverage_bench, coverage_tmle))
 }
 
 reps <- 100
+psis <- c()
+tmle_psis <- c()
 diff_bench <- c()
 diff_tmle <- c()
 coverage_bench <- c()
 coverage_tmle <- c()
 for (i in 1:reps) {
   fits <- seed_fit(i)
-  diff_bench <- c(diff_bench, fits[1])
-  diff_tmle <- c(diff_tmle, fits[2])
-  coverage_bench <- c(coverage_bench, fits[3])
-  coverage_tmle <- c(coverage_tmle, fits[4])
+  psis <- c(psis, fits[1])
+  tmle_psis <- c(tmle_psis, fits[2])
+  diff_bench <- c(diff_bench, fits[3])
+  diff_tmle <- c(diff_tmle, fits[4])
+  coverage_bench <- c(coverage_bench, fits[5])
+  coverage_tmle <- c(coverage_tmle, fits[6])
 }
+
+# estimator
+dat_psis <- data.frame(Method=rep(c("Naive", "TML"), each=reps), 
+                       Estimator=c(psis, tmle_psis))
+
+mu <- ddply(dat_psis, "Method", summarise, grp.mean=mean(Estimator))
+plt_hist <- ggplot(dat_psis, aes(x=Estimator, color=Method)) +
+  geom_histogram(fill="white", position="dodge") +
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=Method),
+             linetype="dashed") +
+  geom_vline(aes(xintercept=mean, color='Truth'))
+  theme(legend.position="top")
 
 # loss
 dat_diff <- data.frame(Simulation_No.=rep(1:reps, 2), 
-                       Method=rep(c("Plug-In", "TML"), each=reps), 
+                       Method=rep(c("Naive", "TML"), each=reps), 
                        Loss_l2=c(diff_bench, diff_tmle))
 
+mse <- ddply(dat_diff, "Method", summarise, grp.mean=mean(Loss_l2))
 plt_plot <- ggplot(data=dat_diff, aes(x=Simulation_No., y=Loss_l2, group=Method)) +
-  geom_point(aes(color=Method))
+  geom_point(aes(color=Method)) +
+  geom_hline(data=mse, aes(yintercept=grp.mean, color=Method),
+             linetype="dashed")
 
-mu <- ddply(dat_diff, "Method", summarise, grp.mean=mean(Loss_l2))
-plt_hist <- ggplot(dat_diff, aes(x=Loss_l2, color=Method)) +
-  geom_histogram(fill="white", position="dodge")+
-  geom_vline(data=mu, aes(xintercept=grp.mean, color=Method),
-             linetype="dashed")+
-  theme(legend.position="top")
-
-# coverage
+# summary
+truth <- mean
+sample_mean <- c(mean(psis), mean(tmle_psis))
+sample_sd <- c(sd(psis), sd(tmle_psis))
+mse <- c(mean(diff_bench), mean(diff_tmle))
 tol <- 1e-2
 coverage <- c(sum(abs(1-coverage_bench)<=tol)/reps, sum(abs(1-coverage_tmle)<=tol)/reps)
-dat_coverage <- data.frame(Method=c("Plug-In", "TML"), 
-                           Coverage_95=label_percent()(coverage))
+dat_summary <- data.frame(Method=c("Naive", "TML"), 
+                          Truth=truth, Sample_Mean=sample_mean, Sample_Sd=sample_sd, 
+                          Coverage_95=label_percent()(coverage))
 
-g <- tableGrob(dat_coverage, rows = NULL)
+g <- tableGrob(dat_summary, rows = NULL)
 g <- gtable_add_grob(g,
                      grobs = rectGrob(gp = gpar(fill = NA, lwd = 2)),
                      t = 2, b = nrow(g), l = 1, r = ncol(g))

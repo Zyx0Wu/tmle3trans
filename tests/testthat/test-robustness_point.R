@@ -58,7 +58,7 @@ naive_psi <- mean(IS0EYW)
 # delta method:
 #naive_se <- sqrt(deltaMeanOLS(WS0, IS0EYW, beta_y_cov))
 # by EIC:
-naive_se <- sd(IS0EYW)
+naive_se <- sd(IS0EYW)/sqrt(length(IS0EYW))
 naive_CI95 <- wald_ci(naive_psi, naive_se)
 
 ### 2. IPTW ###
@@ -68,12 +68,14 @@ IS1 <- S == 1
 pS0W <- 1 - pS1W
 pS0 <- mean(pS0W)
 
-iptw_psi <- mean(IS1/prob_clip(pS1W) * pS0W/prob_clip(pS0) * Y)
+iptw_psis <- IS1/prob_clip(pS1W) * pS0W/prob_clip(pS0) * Y
+
+iptw_psi <- mean(iptw_psis)
 # delta method:
 #TODO: IPTW delta method
 #iptw_se <- ???
 # by EIC:
-iptw_se <- sd(IS1/prob_clip(pS1W) * pS0W/prob_clip(pS0) * (Y - iptw_psi))
+iptw_se <- sd(iptw_psis)/sqrt(n)
 iptw_CI95 <- wald_ci(iptw_psi, iptw_se)
 
 ### 3. TML ###

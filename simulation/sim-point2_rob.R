@@ -18,8 +18,8 @@ n <- 1e5
 W1 <- sample(1:4, n, replace=TRUE, prob=c(0.1, 0.2, 0.65, 0.05))
 W2 <- rnorm(n, 0.7, 1)
 W3 <- rpois(n, 3)
-S <- rbinom(n, 1, expit(-1 + .5 * W1 * sin(W3 + 8) + .2 * sqrt(abs(-W2^3))))
-Y <- rnorm(n, 1.4 - 0.6 * W1 - 2 * W2 + 0.7 * W3, .4)
+S <- rbinom(n, 1, expit(1.4 - 0.6 * W1 - 2 * W2 + 0.7 * W3))
+Y <- rnorm(n, -1 - .5 * W1 + .8 * W2 + .2 * W3, .4)
 
 data <- data.table(W1,W2,W3,S,Y)
 node_list <- list(W = c("W1", "W2", "W3"), S = "S", Y = "Y")
@@ -36,12 +36,12 @@ sd <- sd(as.matrix(YS0)) / sqrt(length(as.matrix(YS0)))
 # setup data for test
 seed_fit = function(seed) {
   set.seed(seed)
-  n <- 1000
+  n <- 10000
   W1 <- sample(1:4, n, replace=TRUE, prob=c(0.1, 0.2, 0.65, 0.05))
   W2 <- rnorm(n, 0.7, 1)
   W3 <- rpois(n, 3)
-  S <- rbinom(n, 1, expit(-1 + .5 * W1 * sin(W3 + 8) + .2 * sqrt(abs(-W2^3))))
-  Y <- rnorm(n, 1.4 - 0.6 * W1 - 2 * W2 + 0.7 * W3, .4)
+  S <- rbinom(n, 1, expit(1.4 - 0.6 * W1 - 2 * W2 + 0.7 * W3))
+  Y <- rnorm(n, -1 - .5 * W1 + .8 * W2 + .2 * W3, .4)
   
   data <- data.table(W1,W2,W3,S,Y)
   node_list <- list(W = c("W1", "W2", "W3"), S = "S", Y = "Y")
@@ -50,44 +50,57 @@ seed_fit = function(seed) {
   data0 <- data[data[[node_list$S]] == 0, ]
   data1 <- data[data[[node_list$S]] == 1, ]
   
-  ### 1. Benchmark ###
-  YS1 <- data1[ ,colnames(data1) %in% node_list$Y, with=FALSE]
+  ### fit ###
+  WS0 <- data0[ ,colnames(data0) %in% node_list$W, with=FALSE]
   
-  fit_s <- glm(paste(node_list$S, "~", paste(node_list$W, collapse = " + ")),
-               family = binomial(), data = cbind(W, S))
-  beta_s_cov <- as.matrix(vcov(fit_s))
+  s_dens <- function(w, bias=FALSE) expit(1.4 - 0.6 * w[1] - 2 * w[2] + 0.7 * w[3] + bias * n^(-0.4))
+  y_dens <- function(w, bias=FALSE) -1 - .5 * w[1] + .8 * w[2] + .2 * w[3] + bias * n^(-0.4)
   
-  pS1W <- predict(fit_s, newdata = W, type = 'response')
+  fit_s <- function(W) apply(W, 1, s_dens, bias=TRUE)
+  fit_y <- function(W) apply(W, 1, y_dens, bias=TRUE)
+  
+  ### 1. Naive ###
+  # note: not Plug-In
+  IS0EYW <- fit_y(WS0)
+  
+  naive_psi <- mean(IS0EYW)
+  naive_se <- sd(IS0EYW)/sqrt(length(IS0EYW))
+  naive_CI95 <- wald_ci(naive_psi, naive_se)
+  
+  ### 2. IPTW ###
+  pS1W <- fit_s(W)
   IS1 <- S == 1
   
   pS0W <- 1 - pS1W
   pS0 <- mean(pS0W)
   
-  psis <- IS1/prob_clip(pS1W) * pS0W/prob_clip(pS0) * Y
+  iptw_psis <- IS1/prob_clip(pS1W) * pS0W/prob_clip(pS0) * Y
   
-  psi <- mean(psis)
-  # delta method:
-  #TODO: IPTW delta method
-  #se <- ???
-  # by EIC:
-  se <- sd(psis)/sqrt(n)
-  CI95 <- wald_ci(psi, se)
+  iptw_psi <- mean(iptw_psis)
+  iptw_se <- sd(iptw_psis)/sqrt(n)
+  iptw_CI95 <- wald_ci(iptw_psi, iptw_se)
   
-  ### 2. TMLE ###
+  ### 3. TML ###
   tmle_spec <- tmle_AOT(1, 0)
   
   # define data
   tmle_task <- tmle_spec$make_tmle_task(data, node_list)
   
-  # define learners
-  lrnr_glm <- make_learner(Lrnr_glm_fast)
-  learner_list <- list(Y = lrnr_glm, S = lrnr_glm)
+  # define likelihood
+  g_dens <- function(task) apply(task$get_node("covariates"), 1, s_dens, bias=TRUE)
+  Q_mean <- function(task) apply(task$get_node("covariates"), 1, y_dens, bias=TRUE)
+  
+  factor_list <- list(
+    define_lf(LF_emp, "W"),
+    define_lf(LF_known, "S", density_fun = g_dens),
+    define_lf(LF_known, "Y", mean_fun = Q_mean, type = "mean")
+  )
   
   # estimate likelihood
-  initial_likelihood <- tmle_spec$make_initial_likelihood(tmle_task, learner_list)
+  initial_likelihood <- Likelihood$new(factor_list)$train(tmle_task)
   
   # define update method (submodel + loss function)
-  updater <- tmle3_Update$new()
+  updater <- tmle3_Update$new(maxit = 10)
   targeted_likelihood <- Targeted_Likelihood$new(initial_likelihood, updater)
   
   # define parameter
@@ -106,36 +119,47 @@ seed_fit = function(seed) {
   tmle_CI95 <- wald_ci(tmle_psi, tmle_se)
   
   # MSE, coverage
-  l2_diff_bench <- (psi - mean)^2
+  l2_diff_naive <- (naive_psi - mean)^2
+  l2_diff_iptw <- (iptw_psi - mean)^2
   l2_diff_tmle <- (tmle_psi - mean)^2
-  coverage_bench <- pnorm(CI95[2], mean = mean, sd = sd) - 
-    pnorm(CI95[1], mean = mean, sd = sd)
+  coverage_naive <- pnorm(naive_CI95[2], mean = mean, sd = sd) - 
+    pnorm(naive_CI95[1], mean = mean, sd = sd)
+  coverage_iptw <- pnorm(iptw_CI95[2], mean = mean, sd = sd) - 
+    pnorm(iptw_CI95[1], mean = mean, sd = sd)
   coverage_tmle <- pnorm(tmle_CI95[2], mean = mean, sd = sd) - 
     pnorm(tmle_CI95[1], mean = mean, sd = sd)
   
-  return(c(psi, tmle_psi, l2_diff_bench, l2_diff_tmle, coverage_bench, coverage_tmle))
+  return(c(naive_psi, iptw_psi, tmle_psi, 
+           l2_diff_naive, l2_diff_iptw, l2_diff_tmle, 
+           coverage_naive, coverage_iptw, coverage_tmle))
 }
 
-reps <- 100
-psis <- c()
+reps <- 200
+naive_psis <- c()
+iptw_psis <- c()
 tmle_psis <- c()
-diff_bench <- c()
+diff_naive <- c()
+diff_iptw <- c()
 diff_tmle <- c()
-coverage_bench <- c()
+coverage_naive <- c()
+coverage_iptw <- c()
 coverage_tmle <- c()
 for (i in 1:reps) {
   fits <- seed_fit(i)
-  psis <- c(psis, fits[1])
-  tmle_psis <- c(tmle_psis, fits[2])
-  diff_bench <- c(diff_bench, fits[3])
-  diff_tmle <- c(diff_tmle, fits[4])
-  coverage_bench <- c(coverage_bench, fits[5])
-  coverage_tmle <- c(coverage_tmle, fits[6])
+  naive_psis <- c(naive_psis, fits[1])
+  iptw_psis <- c(iptw_psis, fits[2])
+  tmle_psis <- c(tmle_psis, fits[3])
+  diff_naive <- c(diff_naive, fits[4])
+  diff_iptw <- c(diff_iptw, fits[5])
+  diff_tmle <- c(diff_tmle, fits[6])
+  coverage_naive <- c(coverage_naive, fits[7])
+  coverage_iptw <- c(coverage_iptw, fits[8])
+  coverage_tmle <- c(coverage_tmle, fits[9])
 }
 
 # estimator
-dat_psis <- data.frame(Method=rep(c("IPTW", "TML"), each=reps), 
-                       Estimator=c(psis, tmle_psis))
+dat_psis <- data.frame(Method=rep(c("Naive", "IPTW", "TML"), each=reps), 
+                       Estimator=c(naive_psis, iptw_psis, tmle_psis))
 
 mu <- ddply(dat_psis, "Method", summarise, grp.mean=mean(Estimator))
 plt_hist <- ggplot(dat_psis, aes(x=Estimator, color=Method)) +
@@ -146,9 +170,9 @@ plt_hist <- ggplot(dat_psis, aes(x=Estimator, color=Method)) +
 theme(legend.position="top")
 
 # loss
-dat_diff <- data.frame(Simulation_No.=rep(1:reps, 2), 
-                       Method=rep(c("IPTW", "TML"), each=reps), 
-                       Loss_l2=c(diff_bench, diff_tmle))
+dat_diff <- data.frame(Simulation_No.=rep(1:reps, 3), 
+                       Method=rep(c("Naive", "IPTW", "TML"), each=reps), 
+                       Loss_l2=c(diff_naive, diff_iptw, diff_tmle))
 
 mse <- ddply(dat_diff, "Method", summarise, grp.mean=mean(Loss_l2))
 plt_plot <- ggplot(data=dat_diff, aes(x=Simulation_No., y=Loss_l2, group=Method)) +
@@ -158,12 +182,14 @@ plt_plot <- ggplot(data=dat_diff, aes(x=Simulation_No., y=Loss_l2, group=Method)
 
 # summary
 truth <- mean
-sample_mean <- c(mean(psis), mean(tmle_psis))
-sample_sd <- c(sd(psis), sd(tmle_psis))
-mse <- c(mean(diff_bench), mean(diff_tmle))
+sample_mean <- c(mean(naive_psis), mean(iptw_psis), mean(tmle_psis))
+sample_sd <- c(sd(naive_psis), sd(iptw_psis), sd(tmle_psis))
+mse <- c(mean(diff_naive), mean(diff_iptw), mean(diff_tmle))
 tol <- 1e-2
-coverage <- c(sum(abs(1-coverage_bench)<=tol)/reps, sum(abs(1-coverage_tmle)<=tol)/reps)
-dat_summary <- data.frame(Method=c("IPTW", "TML"), 
+coverage <- c(sum(abs(1-coverage_naive)<=tol)/reps, 
+              sum(abs(1-coverage_iptw)<=tol)/reps, 
+              sum(abs(1-coverage_tmle)<=tol)/reps)
+dat_summary <- data.frame(Method=c("Naive", "IPTW", "TML"), 
                           Truth=truth, Sample_Mean=sample_mean, Sample_Sd=sample_sd, 
                           Coverage_95=label_percent()(coverage))
 
