@@ -72,7 +72,7 @@ seed_fit = function(seed) {
   IS1 <- S == 1
   
   pS0W <- 1 - pS1W
-  pS0 <- mean(pS0W)
+  pS0 <- mean(S == 0)
   
   iptw_psis <- IS1/prob_clip(pS1W) * pS0W/prob_clip(pS0) * Y
   
