@@ -4,7 +4,7 @@
 \alias{tmle_AET}
 \title{All Treatment Specific Means}
 \usage{
-tmle_AET(onsite = 1, offsite = 0, ...)
+tmle_AET(onsite = 1, offsite = 0, fit_s_marginal = "empirical", ...)
 }
 \arguments{
 \item{onsite}{value for onsite}

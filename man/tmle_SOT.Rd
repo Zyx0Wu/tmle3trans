@@ -4,7 +4,13 @@
 \alias{tmle_SOT}
 \title{All Treatment Specific Means}
 \usage{
-tmle_SOT(target_times = NULL, onsite = 1, offsite = 0, ...)
+tmle_SOT(
+  target_times = NULL,
+  onsite = 1,
+  offsite = 0,
+  fit_s_marginal = "empirical",
+  ...
+)
 }
 \arguments{
 \item{onsite}{value for onsite}

@@ -34,7 +34,7 @@ Defines a TMLE with Average Effect Transportation
 \if{latex}{\out{\hypertarget{method-new}{}}}
 \subsection{Method \code{new()}}{
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{tmle3_Spec_AET$new(onsite = 1, offsite = 0, ...)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{tmle3_Spec_AET$new(onsite = 1, offsite = 0, fit_s_marginal = "empirical", ...)}\if{html}{\out{</div>}}
 }
 
 }
