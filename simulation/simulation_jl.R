@@ -26,7 +26,7 @@ gendata_trans = function(n) {
 }
 
 # compute the truth for this DGP:
-pop = gendata_trans(5e6)
+pop = gendata_trans(1e5)
 pop
 popS0 =  filter(pop, S==0)
 popS1 =  filter(pop, S==1)
@@ -100,7 +100,7 @@ simJL = function(n, biasS, biasY, wt=TRUE) {
   ### 3. TML ###
 
   tmle_psi_init = mean(Q[S==0])
-
+  browser()
   if (wt) {
     tmlefit = glm(Y[S==1]~1+offset(Q[S==1]),
                   family = gaussian, weights=H1[S==1])
@@ -116,13 +116,54 @@ simJL = function(n, biasS, biasY, wt=TRUE) {
 
   mean(D)
 
-  tmle_psi = mean(Qstar[S==0])
+  tmlejl_psi = mean(Qstar[S==0])
   tmle_psi_init
-  tmle_psi
-  tmle_se <- sd(D)/sqrt(n)
+  tmlejl_psi
+  tmlejl_se <- sd(D)/sqrt(n)
 
-  tmle_CI95 <- c(tmle_psi, tmle_psi - 1.96*tmle_se, tmle_psi + 1.96*tmle_se)
-  tmle_CI95
+  tmlejl_CI95 <- c(tmlejl_psi, tmlejl_psi - 1.96*tmlejl_se, tmlejl_psi + 1.96*tmlejl_se)
+  tmlejl_CI95
+  browser()
+  ### 3. TML3 ###
+  
+  tmle_spec <- tmle_AOT(1, 0)
+  
+  # define data
+  tmle_task <- tmle_spec$make_tmle_task(data, node_list)
+  
+  # define likelihood
+  g_dens <- function(task) apply(task$get_node("covariates"), 1, s_dens, bias=TRUE)
+  Q_mean <- function(task) apply(task$get_node("covariates"), 1, y_dens, bias=TRUE)
+  
+  factor_list <- list(
+    define_lf(LF_emp, "W"),
+    define_lf(LF_known, "S", density_fun = g_dens),
+    define_lf(LF_known, "Y", mean_fun = Q_mean, type = "mean")
+  )
+  
+  # estimate likelihood
+  initial_likelihood <- Likelihood$new(factor_list)$train(tmle_task)
+  
+  # define update method (submodel + loss function)
+  updater <- tmle3_Update$new(maxit = 10)
+  targeted_likelihood <- Targeted_Likelihood$new(initial_likelihood, updater)
+  
+  # define parameter
+  tmle_param <- tmle_spec$make_params(tmle_task, targeted_likelihood)
+  
+  # fit
+  tmle_fit <- fit_tmle3(tmle_task, targeted_likelihood, tmle_param, updater)
+  
+  # extract results
+  tmle_summary <- tmle_fit$summary
+  sl_psi <- tmle_summary$init_est
+  tmle_psi <- tmle_summary$tmle_est
+  tmle_se <- tmle_summary$se
+  tmle_epsilon <- updater$epsilons[[1]]$Y
+  
+  tmle_CI95 <- wald_ci(tmle_psi, tmle_se)
+  
+  
 
   return(list(tmle =  tmle_CI95,
               iptw = iptw_CI95,

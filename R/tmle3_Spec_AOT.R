@@ -13,8 +13,8 @@ tmle3_Spec_AOT <- R6Class(
   class = TRUE,
   inherit = tmle3_Spec,
   public = list(
-    initialize = function(onsite = 1, offsite = 0, ...) {
-      super$initialize(onsite = onsite, offsite = offsite, ...)
+    initialize = function(onsite = 1, offsite = 0, fit_s_marginal = "empirical", ...) {
+      super$initialize(onsite = onsite, offsite = offsite, fit_s_marginal = fit_s_marginal, ...)
     },
     make_tmle_task = function(data, node_list, ...) {
       variable_types <- self$options$variable_types
@@ -30,7 +30,8 @@ tmle3_Spec_AOT <- R6Class(
     make_params = function(tmle_task, likelihood) {
       tmle_params <- define_param(Param_AOT, likelihood,
                                   onsite = self$options$onsite,
-                                  offsite = self$options$offsite)
+                                  offsite = self$options$offsite,
+                                  fit_s_marginal = self$options$fit_s_marginal)
       return(tmle_params)
     }
   ),
@@ -48,8 +49,8 @@ tmle3_Spec_AOT <- R6Class(
 #' @param onsite value for onsite
 #' @param offsite value for offsite
 #' @export
-tmle_AOT <- function(onsite = 1, offsite = 0, ...) {
-  tmle3_Spec_AOT$new(onsite = onsite, offsite = offsite, ...)
+tmle_AOT <- function(onsite = 1, offsite = 0, fit_s_marginal = "empirical", ...) {
+  tmle3_Spec_AOT$new(onsite = onsite, offsite = offsite, fit_s_marginal = fit_s_marginal, ...)
 }
 
 

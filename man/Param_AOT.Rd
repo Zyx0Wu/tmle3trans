@@ -75,6 +75,7 @@ Other Parameters:
   observed_likelihood,
   onsite = 1,
   offsite = 0,
+  fit_s_marginal = "empirical",
   ...,
   outcome_node = "Y"
 )}\if{html}{\out{</div>}}
