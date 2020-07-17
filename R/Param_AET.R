@@ -41,10 +41,10 @@ Param_AET <- R6Class(
   public = list(
     initialize = function(observed_likelihood, intervention, 
                           onsite = 1, offsite = 0,
-                          ...,
+                          fit_s_marginal = "empirical", ...,
                           outcome_node = "Y") {
-      super$initialize(observed_likelihood, onsite, offsite, ..., 
-                       outcome_node = outcome_node)
+      super$initialize(observed_likelihood, onsite, offsite, fit_s_marginal, 
+                       ..., outcome_node = outcome_node)
       private$.intervention <- intervention
       private$.cf_likelihood_intervention <- 
         make_CF_Likelihood(observed_likelihood, 
@@ -61,6 +61,7 @@ Param_AET <- R6Class(
       IA <- self$cf_likelihood_intervention$get_likelihoods(tmle_task, "A", fold_number)
       
       clever_covs <- lapply(base_covs, `*`, IA/pA)
+      #clever_covs <- lapply(base_covs, `*`, IA/prob_clip(pA))
       return(clever_covs)
     }
   ),

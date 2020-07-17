@@ -113,7 +113,7 @@ simJL = function(n, biasS, biasY, wt=TRUE) {
   iptw_se <- sd(H1*(Y-iptw_psi_init))/sqrt(n)
   iptw_CI95 <- c(iptw_psi, iptw_psi - 1.96*iptw_se, iptw_psi + 1.96*iptw_se)
   iptw_CI95
-
+  browser()
   ### 3. TML ###
 
   tmle_psi_init = mean(Q[S==0])

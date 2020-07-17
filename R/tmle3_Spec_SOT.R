@@ -14,9 +14,11 @@ tmle3_Spec_SOT <- R6Class(
   class = TRUE,
   inherit = tmle3_Spec,
   public = list(
-    initialize = function(target_times = NULL, onsite = 1, offsite = 0, ...) {
+    initialize = function(target_times = NULL, onsite = 1, offsite = 0, 
+                          fit_s_marginal = "empirical", ...) {
       super$initialize(target_times = target_times,
-                       onsite = onsite, offsite = offsite, ...)
+                       onsite = onsite, offsite = offsite, 
+                       fit_s_marginal = fit_s_marginal, ...)
     },
     make_tmle_task = function(data, node_list, ...) {
       variable_types <- self$options$variable_types
@@ -35,7 +37,8 @@ tmle3_Spec_SOT <- R6Class(
       tmle_params <- define_param(Param_SOT, likelihood,
                                   target_times = self$options$target_times,
                                   onsite = self$options$onsite,
-                                  offsite = self$options$offsite)
+                                  offsite = self$options$offsite,
+                                  fit_s_marginal = self$options$fit_s_marginal)
       return(tmle_params)
     }
   ),
@@ -49,9 +52,11 @@ tmle3_Spec_SOT <- R6Class(
 #' @param onsite value for onsite
 #' @param offsite value for offsite
 #' @export
-tmle_SOT <- function(target_times = NULL, onsite = 1, offsite = 0, ...) {
+tmle_SOT <- function(target_times = NULL, onsite = 1, offsite = 0, 
+                     fit_s_marginal = "empirical", ...) {
   tmle3_Spec_SOT$new(target_times = target_times,
-                     onsite = onsite, offsite = offsite)
+                     onsite = onsite, offsite = offsite,
+                     fit_s_marginal = fit_s_marginal, ...)
 }
 
 

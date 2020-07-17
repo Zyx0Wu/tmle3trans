@@ -77,6 +77,7 @@ Other Parameters:
   target_times = NULL,
   onsite = 1,
   offsite = 0,
+  fit_s_marginal = "empirical",
   ...,
   outcome_node = "F"
 )}\if{html}{\out{</div>}}
