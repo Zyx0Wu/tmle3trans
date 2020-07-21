@@ -42,10 +42,6 @@ W <- select(pop, node_list$W)
 
 ### 1. Naive ###
 # note: not Plug-In
-bias = T
-Qpop = mutate(W, Q = -1 - .5 * W1 +
-                .8 * W2 + .2 * W3 + bias * n^(-0.3))$Q
-Qpop
 Qpop = mutate(W, Q = -1 - .5 * W1 +
                 .8 * W2 + .2 * W3)$Q
 PSpop = mutate(W, g=prob_clip(expit(1.4 - 0.6 * W1 - 2 * W2 +
@@ -82,7 +78,9 @@ simJL = function(n, biasS, biasY, wt=TRUE) {
   YS1 <- data1$Y
   WS0 <- select(data0, node_list$W)
 
-  s_dens <- function(w, bias=FALSE, n) prob_clip(expit(1.4 - 0.6 * w[1] - 2 * w[2] + 0.7 * w[3] + bias * n^(-0.3)))
+  s_dens <- function(w, bias=FALSE, n)
+    prob_clip(expit(1.4 - 0.6 * w[1] - 2 * w[2] + 0.7 * w[3] +
+                      bias * n^(-0.3)))
   y_dens <- function(w, bias=FALSE, n) -1 - .5 * w[1] +
     .8 * w[2] + .2 * w[3] + bias * n^(-0.3)
 
@@ -149,16 +147,17 @@ simJL = function(n, biasS, biasY, wt=TRUE) {
               naive_psi = naive_psi))
 }
 
-simJL(10,T,T,F)
+simJL(1000,T,T,T)
 cl = makeCluster(8)
 
-n=1000
-B=10
+N=1000
+B=5000
 res = foreach(i=1:B, .errorhandling = "remove") %do%
-  simJL(n,T,T,T)
+  simJL(N,T,T,T)
 
-getres = function(res) {
+getres = function(res, se0,boots, N) {
 
+  se0_n = se0/sqrt(N)
   res = do.call(rbind,lapply(res, function(L) unlist(L)))
   res = data.frame(res)
   head(res)
@@ -178,22 +177,24 @@ getres = function(res) {
   ests = unlist(res[,c(1,4,7,8)])
   names(ests) = NULL
   ests
-  type = c(rep("tmle",n),
-           rep("iptw",n), rep("tmle_init",n),
-           rep("naive_psi", n))
+  type = c(rep("tmle",boots),
+           rep("iptw",boots), rep("tmle_init",boots),
+           rep("naive_psi", boots))
   type
   plotdf = data.frame(ests = ests, type = type)
   return(list(mse = mse, cov_eff = cov_eff, plotdf = plotdf))
 }
 
-se0_n = se0/sqrt(n)
+
 Psi0
-results = getres(res)
+results = getres(res, se0,B, N)
 
+# efficiency and coverage
 results[1:2]
+plotdf = results$plotdf
 
-sampling_dists = ggplot(results$plotdf, aes(x=ests, fill = type))+
-  geom_density(alpha=.4)+geom_vline(xintercept=Psi0)+
+sampling_dists = ggplot(plotdf, aes(x=ests, fill = type))+
+  geom_density(alpha=.3)+geom_vline(xintercept=Psi0)+
   xlim(-1.2,-.1)
 
 sampling_dists
