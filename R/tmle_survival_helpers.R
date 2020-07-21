@@ -33,6 +33,29 @@ survival_o_npsem <- function(node_list, variable_types = NULL) {
 
 #' @export
 #' @rdname survival_trans
+survival_e_npsem <- function(node_list, variable_types = NULL) {
+  # make the tmle task
+  
+  # define censoring (lost to followup node)
+  censoring <- define_node("pre_failure", node_list$pre_failure, c())
+  npsem <- list(
+    # TODO: causal relation, handle t_max
+    define_node("W", node_list[["W"]], variable_type = variable_types[["W"]]),
+    define_node("S", node_list[["S"]], c("W"), variable_type = variable_types[["S"]]),
+    define_node("A", node_list[["A"]], c("W"), variable_type = variable_types[["A"]]),
+    define_node("T", node_list[["T"]], c("A", "W"), variable_type = variable_types[["T"]]),
+    define_node("D", node_list[["D"]], variable_type = variable_types[["D"]]),
+    censoring,
+    # TODO: remove t parent, handle in get_regression
+    define_node("F", node_list[["F"]], c("A", "W"), variable_type = variable_types[["F"]], censoring_node=censoring),
+    define_node("C", node_list[["C"]], c("A", "W"), variable_type = variable_types[["C"]], censoring_node=censoring)   
+  )
+  
+  return(npsem)
+}
+
+#' @export
+#' @rdname survival_trans
 survival_task <- function(data, node_list, make_npsem, variable_types = NULL, ...) {
   setDT(data)
   
@@ -78,6 +101,52 @@ survival_o_likelihood  <- function(tmle_task, learner_list) {
                         type = "mean")
   
   factor_list <- list(W_factor, S_factor, F_factor, C_factor)
+  
+  # TODO: check
+  likelihood <- Likelihood$new(factor_list)$train(tmle_task)
+  return(likelihood)
+}
+
+#' @export
+#' @rdname survival_trans
+survival_e_likelihood  <- function(tmle_task, learner_list) {
+  # covariates
+  # TODO: whether remove duplicates for LF_emp
+  W_factor <- define_lf(LF_emp, "W")
+  
+  # TODO: check if necessary
+  # treatment (bound likelihood away from 0 (and 1 if binary))
+  S_type <- tmle_task$npsem[["S"]]$variable_type
+  if (S_type$type == "continous") {
+    S_bound <- c(1 / tmle_task$nrow, Inf)
+  } else if (S_type$type %in% c("binomial", "categorical")) {
+    S_bound <- 0.025
+  } else {
+    S_bound <- NULL
+  }
+  A_type <- tmle_task$npsem[["A"]]$variable_type
+  if (A_type$type == "continous") {
+    A_bound <- c(1 / tmle_task$nrow, Inf)
+  } else if (A_type$type %in% c("binomial", "categorical")) {
+    A_bound <- 0.025
+  } else {
+    A_bound <- NULL
+  }
+  
+  S_factor <- define_lf(LF_fit, "S", learner = learner_list[["S"]], bound = S_bound)
+  A_factor <- define_lf(LF_fit, "A", learner = learner_list[["A"]], bound = A_bound)
+  
+  # TODO: modify get_regression_task and LF_fit for time variance
+  # TODO: whether need bound
+  outcome_bound <- 0.025
+  F_factor <- define_lf(LF_fit_site, "F", learner = learner_list[["F"]],
+                        is_time_variant = TRUE, bound = outcome_bound,
+                        type = "mean")
+  C_factor <- define_lf(LF_fit_site, "C", learner = learner_list[["C"]],
+                        is_time_variant = TRUE, bound = outcome_bound,
+                        type = "mean")
+  
+  factor_list <- list(W_factor, S_factor, A_factor, F_factor, C_factor)
   
   # TODO: check
   likelihood <- Likelihood$new(factor_list)$train(tmle_task)

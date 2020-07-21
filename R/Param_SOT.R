@@ -68,38 +68,32 @@ Param_SOT <- R6Class(
       pS1W <- self$observed_likelihood$get_likelihood(cf_task_onsite, "S", fold_number)
       pS0W <- self$observed_likelihood$get_likelihood(cf_task_offsite, "S", fold_number)
       
-      pF <- self$observed_likelihood$get_likelihoods(tmle_task, "F", fold_number)
+      hF <- self$observed_likelihood$get_likelihoods(tmle_task, "F", fold_number)
       # TODO: make bound configurable
-      pF <- bound(pF, 0.005)
+      hF <- bound(hF, 0.005)
       
-      pC <- self$observed_likelihood$get_likelihoods(tmle_task, "C", fold_number)
+      hC <- self$observed_likelihood$get_likelihoods(tmle_task, "C", fold_number)
       
       time <- tmle_task$time
       id <- tmle_task$id
-      long_order <- order(id,time)
       
-      IS1_mat <- long_to_mat(IS1,id,time)
-      pS0_mat <- long_to_mat(pS0,id,time)
-      pS1W_mat <- long_to_mat(pS1W,id,time)
-      pS0W_mat <- long_to_mat(pS0W,id,time)
       t_mat <- long_to_mat(time,id,time)
+      hF_mat <- long_to_mat(hF,id,time)
+      hC_mat <- long_to_mat(hC,id,time)
       
-      pF_mat <- long_to_mat(pF,id,time)
-      pC_mat <- long_to_mat(pC,id,time)
-      sF_mat <- dm_to_sm(pF_mat)
-      sC_mat <- dm_to_sm(pC_mat)
+      sF_mat <- hm_to_sm(hF_mat)
+      sC_mat <- hm_to_sm(hC_mat)
       
       ks <- sort(unique(time))
-      
       hk_all <- lapply(ks,function(k){
         Ikt <- k <= t_mat
-        sF_mat_k <- matrix(sF_mat[,k],nrow=nrow(t_mat),ncol=ncol(t_mat))
+        sF_mat_k <- matrix(sF_mat[,k+1],nrow=nrow(t_mat),ncol=ncol(t_mat))
         sC_mat_k <- matrix(sC_mat[,k],nrow=nrow(t_mat),ncol=ncol(t_mat))
-        hk <- -1 * (IS1/pS1W)*(pS0W/pS0)*(Ikt/sC_mat_k)*(sF_mat/sF_mat_k)
+        hk <- -1 * (Ikt/sC_mat_k)*(sF_mat[,-1]/sF_mat_k)
       })
       
       # TODO: this might need to be reordered
-      H1 <- do.call(rbind, hk_all)
+      H1 <- (IS1/pS1W)*(pS0W/pS0) * do.call(rbind, hk_all)
       
       if(subset_times & !is.null(self$target_times)){
         H1[,!(ks%in%self$target_times)] = 0
@@ -121,7 +115,7 @@ Param_SOT <- R6Class(
       IS0 <- self$cf_likelihood_offsite$get_likelihoods(tmle_task, "S", fold_number)
       
       cf_task_onsite <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$onsite, tmle_task$nrow)))
-      pFS1 <- self$observed_likelihood$get_likelihood(cf_task_onsite, self$outcome_node, fold_number)
+      hFS1 <- self$observed_likelihood$get_likelihood(cf_task_onsite, self$outcome_node, fold_number)
       
       if (self$fit_s_marginal == "empirical") {
         pS0 <- 1 - mean(training_task$data$S)
@@ -135,17 +129,17 @@ Param_SOT <- R6Class(
       id <- tmle_task$id
       
       # TODO: make bound configurable
-      pFS1 <- bound(pFS1, 0.005)
-      pFS1_mat <- long_to_mat(pFS1,id,time)
-      sFS1_mat <- dm_to_sm(pFS1_mat)
-      psi <- colMeans(sFS1_mat)
+      hFS1 <- bound(hFS1, 0.005)
+      hFS1_mat <- long_to_mat(hFS1,id,time)
+      sFS1_mat <- hm_to_sm(hFS1_mat)
+      psi <- colMeans(sFS1_mat[,-1])
       T_tilde <- tmle_task$get_tmle_node("T")
       Delta <- tmle_task$get_tmle_node("D")
       k <- time
       Fail <- (T_tilde == k) & (Delta==1)
       ITk <- (T_tilde >= k)
       
-      D1_tk <- H1*as.vector(Fail - (ITk * pFS1))
+      D1_tk <- H1 * as.vector(Fail - (ITk * hFS1))
       # zero out entries that don't contribute to sum
       
       ts <- sort(unique(k))
@@ -159,8 +153,6 @@ Param_SOT <- R6Class(
       D1 <- as.matrix(D1[,-1,with=FALSE])
       
       psi_mat <- matrix(psi,nrow=nrow(D1),ncol=ncol(D1),byrow=TRUE)
-      IS0_mat <- long_to_mat(IS0,id,time)
-      pS0_mat <- long_to_mat(pS0,id,time)
       D2 <- (IS0/pS0)*(sFS1_mat - psi_mat)
 
       IC_mat <- D1 + D2

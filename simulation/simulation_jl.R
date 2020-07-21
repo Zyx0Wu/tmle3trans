@@ -87,7 +87,8 @@ simJL = function(n, biasS, biasY, wt=TRUE) {
   pS1W <- apply(W, 1, s_dens,n=n, bias=biasS)
 
   pS0W <- 1 - pS1W
-  pS0 <- mean(data$S==0)
+  #pS0 <- mean(data$S==0)
+  pS0 <- 1 - mean(pS1W)
 
   H1 = S*pS0W/(pS0*pS1W)
 
@@ -98,9 +99,10 @@ simJL = function(n, biasS, biasY, wt=TRUE) {
   iptw_CI95
 
   ### 3. TML ###
-
-  tmle_psi_init = mean(Q[S==0])
-  browser()
+  
+  #tmle_psi_init = mean(Q[S==0])
+  tmle_psi_init = mean((S == 0)/pS0 * Q)
+  
   if (wt) {
     tmlefit = glm(Y[S==1]~1+offset(Q[S==1]),
                   family = gaussian, weights=H1[S==1])
@@ -116,24 +118,25 @@ simJL = function(n, biasS, biasY, wt=TRUE) {
 
   mean(D)
 
-  tmlejl_psi = mean(Qstar[S==0])
+  #tmlejl_psi = mean(Qstar[S==0])
+  tmlejl_psi = mean((S == 0)/pS0 * Qstar)
   tmle_psi_init
   tmlejl_psi
   tmlejl_se <- sd(D)/sqrt(n)
 
   tmlejl_CI95 <- c(tmlejl_psi, tmlejl_psi - 1.96*tmlejl_se, tmlejl_psi + 1.96*tmlejl_se)
   tmlejl_CI95
-  browser()
+  
   ### 3. TML3 ###
   
-  tmle_spec <- tmle_AOT(1, 0)
+  tmle_spec <- tmle_AOT(1, 0, fit_s_marginal = "integral")
   
   # define data
   tmle_task <- tmle_spec$make_tmle_task(data, node_list)
   
   # define likelihood
-  g_dens <- function(task) apply(task$get_node("covariates"), 1, s_dens, bias=TRUE)
-  Q_mean <- function(task) apply(task$get_node("covariates"), 1, y_dens, bias=TRUE)
+  g_dens <- function(task) apply(task$get_node("covariates"), 1, s_dens, n=n, bias=TRUE)
+  Q_mean <- function(task) apply(task$get_node("covariates"), 1, y_dens, n=n, bias=TRUE)
   
   factor_list <- list(
     define_lf(LF_emp, "W"),
@@ -162,7 +165,7 @@ simJL = function(n, biasS, biasY, wt=TRUE) {
   tmle_epsilon <- updater$epsilons[[1]]$Y
   
   tmle_CI95 <- wald_ci(tmle_psi, tmle_se)
-  
+  browser()
   
 
   return(list(tmle =  tmle_CI95,
