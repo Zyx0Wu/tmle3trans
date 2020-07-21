@@ -43,6 +43,7 @@ Parameter definition for the Average Outcome Transportation (AOT).
 \seealso{
 Other Parameters: 
 \code{\link{Param_AET}},
+\code{\link{Param_SET}},
 \code{\link{Param_SOT}}
 }
 \concept{Parameters}

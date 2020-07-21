@@ -2,15 +2,21 @@
 % Please edit documentation in R/tmle_survival_helpers.R
 \name{survival_o_npsem}
 \alias{survival_o_npsem}
+\alias{survival_e_npsem}
 \alias{survival_task}
 \alias{survival_o_likelihood}
+\alias{survival_e_likelihood}
 \title{Helper Functions for Survival Analysis}
 \usage{
 survival_o_npsem(node_list, variable_types = NULL)
 
+survival_e_npsem(node_list, variable_types = NULL)
+
 survival_task(data, node_list, make_npsem, variable_types = NULL, ...)
 
 survival_o_likelihood(tmle_task, learner_list)
+
+survival_e_likelihood(tmle_task, learner_list)
 }
 \arguments{
 \item{node_list}{a list of character vectors, listing the variables that comprise each node}

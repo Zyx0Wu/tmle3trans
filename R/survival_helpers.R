@@ -12,15 +12,15 @@ long_to_mat = function(x, id, time){
   return(mat)
 }
 
-#' Density Matrix to Survival Matrix
+#' Hazard Matrix to Survival Matrix
 #' 
-#' @param dm density matrix
+#' @param hm hazard matrix
 #' 
 #' @export
-dm_to_sm = function(dm){
+hm_to_sm = function(hm){
   # TODO: check
-  sm <- t(apply(1-dm,1,cumprod))
-  sm <- cbind(1,sm[,-ncol(sm)])
+  sm <- t(apply(1-hm,1,cumprod))
+  sm <- cbind(1,sm)
   return(sm)
 }
 
@@ -39,5 +39,36 @@ df_time = function(df, t_current){
   df_t$pre_failure <- as.numeric(t_current <= df$T.tilde)
   
   return(df_t)
+}
+
+#' Survival Data All Time Expansion
+#' 
+#' @param data data
+#' @param node_list node_list
+#' 
+#' @export
+transform_data = function(data, node_list) {
+  T_tilde_name <- node_list[["T"]]
+  Delta_name <- node_list[["D"]]
+  T_tilde_data <- data[T_tilde_name]
+  Delta_data <- data[Delta_name]
+  k_grid <- 1:max(T_tilde_data)
+  
+  if (is.null(node_list$id)) {
+    id <- 1:nrow(data)
+    data <- cbind(id=id, data)
+    node_list$id <- "id"
+  }
+  
+  all_times <- lapply(k_grid, function(t_current) df_time(data, t_current))
+  df_long <- rbindlist(all_times)
+  
+  long_node_list <- copy(node_list)
+  long_node_list$time <- "t"
+  long_node_list$pre_failure <- "pre_failure"
+  long_node_list[["F"]] <- "F" 
+  long_node_list[["C"]] <- "C"
+  
+  return(list(long_data=df_long, long_node_list=long_node_list))
 }
 

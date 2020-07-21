@@ -1,4 +1,4 @@
-#' Defines a TMLE with Survival Outcome Transportation
+#' Defines a TMLE with Survival Effect Transportation
 #'
 #'
 #' @importFrom R6 R6Class
@@ -8,8 +8,8 @@
 #' @export
 #
 
-tmle3_Spec_SOT <- R6Class(
-  classname = "tmle3_Spec_SOT",
+tmle3_Spec_SET <- R6Class(
+  classname = "tmle3_Spec_SET",
   portable = TRUE,
   class = TRUE,
   inherit = tmle3_Spec,
@@ -22,23 +22,35 @@ tmle3_Spec_SOT <- R6Class(
     },
     make_tmle_task = function(data, node_list, ...) {
       variable_types <- self$options$variable_types
-
-      tmle_task <- survival_task(data, node_list, survival_o_npsem, variable_types)
-
+      
+      tmle_task <- survival_task(data, node_list, survival_e_npsem, variable_types)
+      
       return(tmle_task)
     },
-
+    
     make_initial_likelihood = function(tmle_task, learner_list = NULL) {
-      likelihood <- survival_o_likelihood(tmle_task, learner_list)
+      likelihood <- survival_e_likelihood(tmle_task, learner_list)
       return(likelihood)
     },
-
+    
     make_params = function(tmle_task, likelihood) {
-      tmle_params <- define_param(Param_SOT, likelihood,
-                                  target_times = self$options$target_times,
-                                  onsite = self$options$onsite,
-                                  offsite = self$options$offsite,
-                                  fit_s_marginal = self$options$fit_s_marginal)
+      # todo: export and use sl3:::get_levels
+      A_vals <- tmle_task$get_tmle_node("A")
+      if (is.factor(A_vals)) {
+        A_levels <- levels(A_vals)
+        A_levels <- factor(A_levels, A_levels)
+      } else {
+        A_levels <- sort(unique(A_vals))
+      }
+      tmle_params <- lapply(A_levels, function(A_level) {
+        tmle_param <- define_param(Param_SET, likelihood, A_level,
+                                   target_times = self$options$target_times,
+                                   onsite = self$options$onsite,
+                                   offsite = self$options$offsite,
+                                   fit_s_marginal = self$options$fit_s_marginal)
+        return(tmle_param)
+      })
+      
       return(tmle_params)
     }
   ),
@@ -52,9 +64,9 @@ tmle3_Spec_SOT <- R6Class(
 #' @param onsite value for onsite
 #' @param offsite value for offsite
 #' @export
-tmle_SOT <- function(target_times = NULL, onsite = 1, offsite = 0, 
+tmle_SET <- function(target_times = NULL, onsite = 1, offsite = 0, 
                      fit_s_marginal = "empirical", ...) {
-  tmle3_Spec_SOT$new(target_times = target_times,
+  tmle3_Spec_SET$new(target_times = target_times,
                      onsite = onsite, offsite = offsite,
                      fit_s_marginal = fit_s_marginal, ...)
 }

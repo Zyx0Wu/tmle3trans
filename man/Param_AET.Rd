@@ -39,6 +39,7 @@ Parameter definition for the Average Effect Transportation (AET).
 \seealso{
 Other Parameters: 
 \code{\link{Param_AOT}},
+\code{\link{Param_SET}},
 \code{\link{Param_SOT}}
 }
 \concept{Parameters}
