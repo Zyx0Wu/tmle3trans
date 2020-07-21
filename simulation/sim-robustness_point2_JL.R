@@ -36,8 +36,8 @@ Ypop = pop$Y
 Spop = pop$S
 
 ### fit ###
-popW = select(pop, node_list$W)
 node_list <- list(W = c("W1", "W2", "W3"), S = "S", Y = "Y")
+popW = select(pop, node_list$W)
 W <- select(pop, node_list$W)
 
 ### 1. Naive ###
@@ -46,8 +46,10 @@ bias = T
 Qpop = mutate(W, Q = -1 - .5 * W1 +
                 .8 * W2 + .2 * W3 + bias * n^(-0.3))$Q
 Qpop
+Qpop = mutate(W, Q = -1 - .5 * W1 +
+                .8 * W2 + .2 * W3)$Q
 PSpop = mutate(W, g=prob_clip(expit(1.4 - 0.6 * W1 - 2 * W2 +
-                                    0.7 * W3 + bias * n^(-0.3))))$g
+                                    0.7 * W3)))$g
 PSpop
 Psi0
 
@@ -55,7 +57,7 @@ Dpop = Spop*(1-PSpop)/PSpop/mean(1-Spop)*(Ypop - Qpop)+
   (1-Spop)/mean(1-Spop)*(Qpop-mean(Qpop[Spop==0]))
 
 se0 = sd(Dpop)
-
+se0
 ###
 ###
 # This is your simulation function except there is not a method
@@ -88,11 +90,11 @@ simJL = function(n, biasS, biasY, wt=TRUE) {
   # note: not Plug-In
   Q = apply(W, 1, y_dens, bias = biasY, n = n)
 
-  naive_psi <- mean(QS0)
-  naive_psi
-
   S = data$S
   Y = data$Y
+
+  naive_psi <- mean(Q[S==0])
+  naive_psi
 
   ###
   ###
@@ -113,7 +115,7 @@ simJL = function(n, biasS, biasY, wt=TRUE) {
   iptw_se <- sd(H1*(Y-iptw_psi_init))/sqrt(n)
   iptw_CI95 <- c(iptw_psi, iptw_psi - 1.96*iptw_se, iptw_psi + 1.96*iptw_se)
   iptw_CI95
-  browser()
+
   ### 3. TML ###
 
   tmle_psi_init = mean(Q[S==0])
@@ -147,11 +149,11 @@ simJL = function(n, biasS, biasY, wt=TRUE) {
               naive_psi = naive_psi))
 }
 
-simJL(1000,T,T,F)
+simJL(10,T,T,F)
 cl = makeCluster(8)
 
 n=1000
-B=5000
+B=10
 res = foreach(i=1:B, .errorhandling = "remove") %do%
   simJL(n,T,T,T)
 
