@@ -4,7 +4,7 @@
 \alias{df_time}
 \title{Survival Data Frame Time Variable Expansion}
 \usage{
-df_time(df, t_current)
+df_time(df, t_current, t_tilde = "T.tilde", delta = "Delta")
 }
 \arguments{
 \item{df}{data frame}

@@ -35,9 +35,9 @@ Defines a TMLE with Survival Outcome Transportation
 \subsection{Method \code{new()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{tmle3_Spec_SOT$new(
-  target_times = NULL,
   onsite = 1,
   offsite = 0,
+  target_times = NULL,
   fit_s_marginal = "empirical",
   ...
 )}\if{html}{\out{</div>}}

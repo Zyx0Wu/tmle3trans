@@ -41,7 +41,7 @@ Param_SET <- R6Class(
   inherit = Param_SOT,
   public = list(
     initialize = function(observed_likelihood, intervention, 
-                          target_times = NULL, onsite = 1, offsite = 0, 
+                          onsite = 1, offsite = 0, target_times = NULL, 
                           fit_s_marginal = "empirical", ..., 
                           outcome_node = "F") {
       # TODO: check outcome_node, current I(T<=t, delta=1), need I(T=t, delta=1)

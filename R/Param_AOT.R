@@ -65,7 +65,7 @@ Param_AOT <- R6Class(
       IS1 <- self$cf_likelihood_onsite$get_likelihoods(tmle_task, "S", fold_number)
 
       if (self$fit_s_marginal == "empirical") {
-        pS0 <- 1 - mean(training_task$data$S)
+        pS0 <- 1 - mean(training_task$get_tmle_node("S"))
       } else if (self$fit_s_marginal == "integral") {
         cf_train_offsite <- training_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$offsite, training_task$nrow)))
         pS0 <- weighted.mean(self$observed_likelihood$get_likelihood(cf_train_offsite, "S", fold_number),
@@ -95,9 +95,9 @@ Param_AOT <- R6Class(
 
       cf_task_onsite <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$onsite, tmle_task$nrow)))
       EYS1 <- self$observed_likelihood$get_likelihood(cf_task_onsite, self$outcome_node, fold_number)
-
+      
       if (self$fit_s_marginal == "empirical") {
-        pS0 <- 1 - mean(training_task$data$S)
+        pS0 <- 1 - mean(training_task$get_tmle_node("S"))
       } else if (self$fit_s_marginal == "integral") {
         cf_train_offsite <- training_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$offsite, training_task$nrow)))
         pS0 <- weighted.mean(self$observed_likelihood$get_likelihood(cf_train_offsite, "S", fold_number),

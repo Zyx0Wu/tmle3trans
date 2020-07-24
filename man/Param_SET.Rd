@@ -76,9 +76,9 @@ Other Parameters:
 \if{html}{\out{<div class="r">}}\preformatted{Param_SET$new(
   observed_likelihood,
   intervention,
-  target_times = NULL,
   onsite = 1,
   offsite = 0,
+  target_times = NULL,
   fit_s_marginal = "empirical",
   ...,
   outcome_node = "F"

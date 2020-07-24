@@ -20,7 +20,6 @@ long_to_mat = function(x, id, time){
 hm_to_sm = function(hm){
   # TODO: check
   sm <- t(apply(1-hm,1,cumprod))
-  sm <- cbind(1,sm)
   return(sm)
 }
 
@@ -30,13 +29,13 @@ hm_to_sm = function(hm){
 #' @param t_current current time
 #' 
 #' @export
-df_time = function(df, t_current){
+df_time = function(df, t_current, t_tilde="T.tilde", delta="Delta"){
   df_t <- copy(df)
   # TODO: check
   df_t$t <- t_current
-  df_t$Failed <- as.numeric(t_current == df$T.tilde & df$Delta == 1)
-  df_t$Censored <- as.numeric(t_current == df$T.tilde & df$Delta == 0)
-  df_t$pre_failure <- as.numeric(t_current <= df$T.tilde)
+  df_t$Failed <- as.numeric(t_current == df[[t_tilde]] & df[[delta]] == 1)
+  df_t$Censored <- as.numeric(t_current == df[[t_tilde]] & df[[delta]] == 0)
+  df_t$pre_failure <- as.numeric(t_current <= df[[t_tilde]])
   
   return(df_t)
 }

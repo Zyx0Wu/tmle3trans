@@ -47,16 +47,25 @@ Param_SOT <- R6Class(
       # TODO: check outcome_node, current I(T<=t, delta=1), need I(T=t, delta=1)
       super$initialize(observed_likelihood, onsite, offsite, fit_s_marginal, ..., outcome_node = outcome_node)
       private$.target_times <- target_times
+      
+      times <- sort(unique(observed_likelihood$training_task$time))
+      private$.times <- times
+      if(is.null(target_times)){
+        private$.targeted <- rep(TRUE, length(times))
+      } else {
+        private$.targeted <- times %in% target_times
+      }
     },
     clever_covariates_internal = function(tmle_task = NULL, fold_number = "full", subset_times = FALSE) {
       training_task <- self$observed_likelihood$training_task
       if (is.null(tmle_task)) {
         tmle_task <- self$observed_likelihood$training_task
       }
+      
       IS1 <- self$cf_likelihood_onsite$get_likelihoods(tmle_task, "S", fold_number)
       
       if (self$fit_s_marginal == "empirical") {
-        pS0 <- 1 - mean(training_task$data$S)
+        pS0 <- 1 - mean(training_task$get_tmle_node("S"))
       } else if (self$fit_s_marginal == "integral") {
         cf_train_offsite <- training_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$offsite, training_task$nrow)))
         pS0 <- weighted.mean(self$observed_likelihood$get_likelihood(cf_train_offsite, "S", fold_number),
@@ -84,12 +93,15 @@ Param_SOT <- R6Class(
       sF_mat <- hm_to_sm(hF_mat)
       sC_mat <- hm_to_sm(hC_mat)
       
+      # fix t-1
+      sC_mat <- cbind(1, sC_mat[,-ncol(sC_mat)])
+      
       ks <- sort(unique(time))
       hk_all <- lapply(ks,function(k){
         Ikt <- k <= t_mat
-        sF_mat_k <- matrix(sF_mat[,k+1],nrow=nrow(t_mat),ncol=ncol(t_mat))
+        sF_mat_k <- matrix(sF_mat[,k],nrow=nrow(t_mat),ncol=ncol(t_mat))
         sC_mat_k <- matrix(sC_mat[,k],nrow=nrow(t_mat),ncol=ncol(t_mat))
-        hk <- -1 * (Ikt/sC_mat_k)*(sF_mat[,-1]/sF_mat_k)
+        hk <- -1 * (Ikt/sC_mat_k)*(sF_mat/sF_mat_k)
       })
       
       # TODO: this might need to be reordered
@@ -118,7 +130,7 @@ Param_SOT <- R6Class(
       hFS1 <- self$observed_likelihood$get_likelihood(cf_task_onsite, self$outcome_node, fold_number)
       
       if (self$fit_s_marginal == "empirical") {
-        pS0 <- 1 - mean(training_task$data$S)
+        pS0 <- 1 - mean(training_task$get_tmle_node("S"))
       } else if (self$fit_s_marginal == "integral") {
         cf_train_offsite <- training_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$offsite, training_task$nrow)))
         pS0 <- weighted.mean(self$observed_likelihood$get_likelihood(cf_train_offsite, "S", fold_number),
@@ -132,11 +144,11 @@ Param_SOT <- R6Class(
       hFS1 <- bound(hFS1, 0.005)
       hFS1_mat <- long_to_mat(hFS1,id,time)
       sFS1_mat <- hm_to_sm(hFS1_mat)
-      psi <- colMeans(sFS1_mat[,-1])
+      psi <- colMeans((IS0/pS0) * sFS1_mat)
       T_tilde <- tmle_task$get_tmle_node("T")
       Delta <- tmle_task$get_tmle_node("D")
       k <- time
-      Fail <- (T_tilde == k) & (Delta==1)
+      Fail <- (T_tilde == k) & (Delta == 1)
       ITk <- (T_tilde >= k)
       
       D1_tk <- H1 * as.vector(Fail - (ITk * hFS1))
@@ -153,7 +165,7 @@ Param_SOT <- R6Class(
       D1 <- as.matrix(D1[,-1,with=FALSE])
       
       psi_mat <- matrix(psi,nrow=nrow(D1),ncol=ncol(D1),byrow=TRUE)
-      D2 <- (IS0/pS0)*(sFS1_mat - psi_mat)
+      D2 <- (IS0/pS0) * (sFS1_mat - psi_mat)
 
       IC_mat <- D1 + D2
       
@@ -168,11 +180,14 @@ Param_SOT <- R6Class(
   active = list(
     # TODO: modify
     name = function() {
-      param_form <- sprintf("E[P(T > t | W, trial) | reality]")
+      param_form <- sprintf("E[P(T >= %s|W, trial) | reality]", self$times)
       return(param_form)
     },
     update_nodes = function() {
       return(self$outcome_node)
+    },
+    times = function() {
+      return(private$.times)
     },
     target_times = function() {
       return(private$.target_times)
@@ -181,6 +196,7 @@ Param_SOT <- R6Class(
   private = list(
     .type = "TMLE_SOT",
     .supports_outcome_censoring = TRUE,
+    .times = NULL,
     .target_times = NULL
   )
 )
