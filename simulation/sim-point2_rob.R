@@ -26,7 +26,7 @@ gendata_trans = function(n) {
 
 ### fit ###
 s_dens <- function(w, bias=FALSE) expit(1.4 - 0.6 * w[1] - 2 * w[2] + 0.7 * w[3] + bias * n^(-0.4))
-y_dens <- function(w, bias=FALSE) -1 - .5 * w[1] + .8 * w[2] + .2 * w[3] + bias * n^(-0.4)
+y_dens <- function(w, bias=FALSE) -1 - .5 * w[1] + .8 * w[2] + .2 * w[3] + bias * n^(-0.3)
 
 fit_s <- function(W, bias=TRUE) apply(W, 1, s_dens, bias=bias)
 fit_y <- function(W, bias=TRUE) apply(W, 1, y_dens, bias=bias)
@@ -55,6 +55,7 @@ IS1 <- data$S == 1
 IS0 <- data$S == 0
 pS0W <- 1 - pS1W
 pS0 <- mean(data$S == 0)
+
 D = IS1/pS1W*pS0W/pS0 * (data$Y-EYW) + IS0/pS0 * (EYW-mean)
 
 # setup data for test
@@ -83,7 +84,8 @@ seed_fit = function(seed, n) {
   pS0W <- 1 - pS1W
   pS0 <- mean(data$S == 0)
   
-  iptw_psis <- IS1/pS1W * pS0W/pS0 * data$Y
+  Hs <- IS1/prob_clip(pS1W) * pS0W/pS0
+  iptw_psis <- Hs/mean(Hs) * data$Y
   
   iptw_psi <- mean(iptw_psis)
   iptw_se <- sd(iptw_psis)/sqrt(n)
@@ -127,20 +129,7 @@ seed_fit = function(seed, n) {
   
   tmle_CI95 <- wald_ci(tmle_psi, tmle_se)
   
-  # MSE, coverage
-  l2_diff_naive <- (naive_psi - mean)^2
-  l2_diff_iptw <- (iptw_psi - mean)^2
-  l2_diff_tmle <- (tmle_psi - mean)^2
-  coverage_naive <- pnorm(naive_CI95[2], mean = mean, sd = sd) - 
-    pnorm(naive_CI95[1], mean = mean, sd = sd)
-  coverage_iptw <- pnorm(iptw_CI95[2], mean = mean, sd = sd) - 
-    pnorm(iptw_CI95[1], mean = mean, sd = sd)
-  coverage_tmle <- pnorm(tmle_CI95[2], mean = mean, sd = sd) - 
-    pnorm(tmle_CI95[1], mean = mean, sd = sd)
-  
-  return(c(naive_psi, iptw_psi, tmle_psi, naive_se, iptw_se, tmle_se,
-           l2_diff_naive, l2_diff_iptw, l2_diff_tmle, 
-           coverage_naive, coverage_iptw, coverage_tmle))
+  return(c(naive_psi, iptw_psi, tmle_psi, naive_se, iptw_se, tmle_se))
 }
 
 reps <- 500
@@ -152,7 +141,7 @@ naive_ses <- c()
 iptw_ses <- c()
 tmle_ses <- c()
 for (i in 1:reps) {
-  fits <- seed_fit(i, obs)
+  fits <- seed_fit(1234+i, obs)
   naive_psis <- c(naive_psis, fits[1])
   iptw_psis <- c(iptw_psis, fits[2])
   tmle_psis <- c(tmle_psis, fits[3])
@@ -173,6 +162,7 @@ coverage_iptw <- pnorm(iptw_CI95[,2], mean = mean, sd = sd) -
 coverage_tmle <- pnorm(tmle_CI95[,2], mean = mean, sd = sd) - 
   pnorm(tmle_CI95[,1], mean = mean, sd = sd)
 
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 # estimator
 dat_psis <- data.frame(Method=rep(c("Naive", "IPTW", "TML"), each=reps), 
                        Estimator=c(naive_psis, iptw_psis, tmle_psis))
@@ -184,6 +174,8 @@ plt_hist <- ggplot(dat_psis, aes(x=Estimator, color=Method)) +
              linetype="dashed") +
   geom_vline(aes(xintercept=mean, color='Truth'))
 theme(legend.position="top")
+ggsave("point2_robust_estimator_histogram.png", 
+       plot = plt_hist, path = "../plot")
 
 # loss
 dat_diff <- data.frame(Simulation_No.=rep(1:reps, 3), 
@@ -195,18 +187,25 @@ plt_plot <- ggplot(data=dat_diff, aes(x=Simulation_No., y=Loss_l2, group=Method)
   geom_point(aes(color=Method)) +
   geom_hline(data=mse, aes(yintercept=grp.mean, color=Method),
              linetype="dashed")
+ggsave("point2_robust_loss_point.png", 
+       plot = plt_plot, path = "../plot")
 
 # summary
 truth <- mean
 sample_mean <- c(mean(naive_psis), mean(iptw_psis), mean(tmle_psis))
 sample_sd <- c(sd(naive_psis), sd(iptw_psis), sd(tmle_psis))
-mse <- c(mean(diff_naive), mean(diff_iptw), mean(diff_tmle))
 coverage <- c(mean(coverage_naive), mean(coverage_iptw), mean(coverage_tmle))
 dat_summary <- data.frame(Method=c("Naive", "IPTW", "TML"), 
                           Truth=truth, Sample_Mean=sample_mean, Sample_Sd=sample_sd, 
+                          MSE=mse[match(mse$Method, c("Naive", "IPTW", "TML")),]$grp.mean,
                           Coverage_95=label_percent()(coverage))
 
-g <- tableGrob(dat_summary, rows = NULL)
+theme <- gridExtra::ttheme_default(
+  core = list(fg_params=list(cex = 0.5)),
+  colhead = list(fg_params=list(cex = 0.5)),
+  rowhead = list(fg_params=list(cex = 0.5)))
+
+g <- tableGrob(dat_summary, rows = NULL, theme = theme)
 g <- gtable_add_grob(g,
                      grobs = rectGrob(gp = gpar(fill = NA, lwd = 2)),
                      t = 2, b = nrow(g), l = 1, r = ncol(g))

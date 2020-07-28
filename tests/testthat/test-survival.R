@@ -26,20 +26,7 @@ simulate_data <- function(n_sim = 2e2) {
   # only grab ID, W's, S, T.tilde, Delta
   Wname <- grep("W", colnames(dat), value = TRUE)
   dat <- dat[, c("ID", Wname, "S", "T.tilde", "Delta")]
-  # input: scalar q, W vector. computes for all W, the S(q|S,W)
-  true_surv_w <- function(q, W) sapply(W, function(w) {
-    1 - pexp(q, rate = .2 + .7 * w^2)
-  })
-  # input: vector q. mean(S(q|S=s,W)), average out W. loop over q
-  true_surv_s <- function(q_grid, surv_fn, s) {
-    W_grid <- seq(.1 - .1 * s, 1.6 - .1 * s, .01)
-    survout <- numeric()
-    for (q in q_grid) survout <- c(survout, mean(surv_fn(q = q / 2, W = W_grid)))
-    return(survout)
-  }
-  truth_surv1 <- function(q) true_surv_s(q_grid = q, surv_fn = true_surv_w, s = 1)
-  truth_surv0 <- function(q) true_surv_s(q_grid = q, surv_fn = true_surv_w, s = 0)
-  return(list(dat = dat, true_surv1 = truth_surv1, true_surv0 = truth_surv0))
+  return(list(dat = dat))
 }
 
 set.seed(1234)
@@ -64,22 +51,30 @@ df_long <- rbindlist(all_times)
 
 node_list <- list(id ="ID", W = c("W", "W1"), S = "S", T = "T.tilde", D = "Delta", 
                   time = "t", F = "Failed", C = "Censored", pre_failure = "pre_failure")
-
+set.seed(1234)
 ### sl3 ###
 lrnr_mean <- make_learner(Lrnr_mean)
 lrnr_glm <- make_learner(Lrnr_glm)
-lrnr_gam <- make_learner(Lrnr_gam)
-lrnr_sl <- Lrnr_sl$new(learners = list(lrnr_mean, lrnr_glm, lrnr_gam))
-learner_list <- list(S = lrnr_sl, F = lrnr_sl, C = lrnr_sl)
+lrnr_sl <- Lrnr_sl$new(learners = list(lrnr_mean, lrnr_glm))
+learner_list <- list(S = lrnr_sl, F = lrnr_sl, C = lrnr_mean)
 
 ### tmle3 ###
 # TODO: check
 var_types <- list(T = Variable_Type$new("continuous"), t = Variable_Type$new("continuous"), 
                   D = Variable_Type$new("binomial"))
+# only target time point 1
 tmle_spec <- tmle_SOT(1, 0, target_times = intersect(1, k_grid), variable_types = var_types)
 tmle_task <- tmle_spec$make_tmle_task(df_long, node_list)
 
 initial_likelihood <- tmle_spec$make_initial_likelihood(tmle_task, learner_list)
+
+updater <- tmle3_Update$new(maxit=5, verbose = TRUE)
+'
+updater <- tmle3_Update$new(
+  constrain_step = TRUE, one_dimensional = TRUE, 
+  delta_epsilon = 3e-2, verbose = TRUE, 
+  convergence_type = "scaled_var", maxit = 10
+)
 
 updater <- tmle3_Update_survival$new(
   maxit = 5, 
@@ -91,27 +86,22 @@ updater <- tmle3_Update_survival$new(
   verbose = TRUE
 )
 '
-updater <- tmle3_Update$new(
-  constrain_step = TRUE, one_dimensional = TRUE, 
-  delta_epsilon = 3e-2, verbose = TRUE, 
-  convergence_type = "scaled_var", maxit = 10
-)
-'
 targeted_likelihood <- Targeted_Likelihood$new(initial_likelihood, updater = updater)
-
 tmle_params <- tmle_spec$make_params(tmle_task, targeted_likelihood)
+# initial mean IC
+mean(tmle_params$estimates(tmle_task, "validation")$IC[,1])
 
 tmle_fit_manual <- fit_tmle3(
   tmle_task, targeted_likelihood, tmle_params,
   targeted_likelihood$updater
 )
+# tmle mean IC
+mean(tmle_params$estimates(tmle_task, "validation")$IC[,1])
 
-psi0_0 <- tmle_fit_manual$summary$init_est
-psi0_n <- tmle_fit_manual$summary$tmle_est
-
-# TODO: check
-t_surv1 <- simulated$true_surv1(k_grid)
-t_surv0 <- simulated$true_surv0(k_grid)
-l2_loss(psi0_0, t_surv0)
-l2_loss(psi0_n, t_surv0)
+# observed hazard for time point 1
+mean(df_long[1:n_sim,][df$S==0,]$Failed)
+# initial hazard for time point 1
+1 - tmle_fit_manual$initial_psi[1]
+# tmle hazard for time point 1
+1 - tmle_fit_manual$summary$tmle_est[1]
 

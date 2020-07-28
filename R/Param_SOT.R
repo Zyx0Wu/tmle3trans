@@ -45,7 +45,6 @@ Param_SOT <- R6Class(
                           fit_s_marginal = "empirical", ..., 
                           outcome_node = "F") {
       # TODO: check outcome_node, current I(T<=t, delta=1), need I(T=t, delta=1)
-      super$initialize(observed_likelihood, onsite, offsite, fit_s_marginal, ..., outcome_node = outcome_node)
       private$.target_times <- target_times
       
       times <- sort(unique(observed_likelihood$training_task$time))
@@ -55,6 +54,8 @@ Param_SOT <- R6Class(
       } else {
         private$.targeted <- times %in% target_times
       }
+      
+      super$initialize(observed_likelihood, onsite, offsite, fit_s_marginal, ..., outcome_node = outcome_node)
     },
     clever_covariates_internal = function(tmle_task = NULL, fold_number = "full", subset_times = FALSE) {
       training_task <- self$observed_likelihood$training_task
@@ -105,7 +106,7 @@ Param_SOT <- R6Class(
       })
       
       # TODO: this might need to be reordered
-      H1 <- (IS1/pS1W)*(pS0W/pS0) * do.call(rbind, hk_all)
+      H1 <- IS1 / pS1W * pS0W / pS0 * do.call(rbind, hk_all)
       
       if(subset_times & !is.null(self$target_times)){
         H1[,!(ks%in%self$target_times)] = 0
@@ -144,7 +145,7 @@ Param_SOT <- R6Class(
       hFS1 <- bound(hFS1, 0.005)
       hFS1_mat <- long_to_mat(hFS1,id,time)
       sFS1_mat <- hm_to_sm(hFS1_mat)
-      psi <- colMeans((IS0/pS0) * sFS1_mat)
+      psi <- colMeans(IS0/pS0 * sFS1_mat)
       T_tilde <- tmle_task$get_tmle_node("T")
       Delta <- tmle_task$get_tmle_node("D")
       k <- time
@@ -165,7 +166,7 @@ Param_SOT <- R6Class(
       D1 <- as.matrix(D1[,-1,with=FALSE])
       
       psi_mat <- matrix(psi,nrow=nrow(D1),ncol=ncol(D1),byrow=TRUE)
-      D2 <- (IS0/pS0) * (sFS1_mat - psi_mat)
+      D2 <- IS0/pS0 * (sFS1_mat - psi_mat)
 
       IC_mat <- D1 + D2
       
