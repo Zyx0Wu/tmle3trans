@@ -20,12 +20,12 @@ survival_o_npsem <- function(node_list, variable_types = NULL) {
     # TODO: causal relation, handle t_max
     define_node("W", node_list[["W"]], variable_type = variable_types[["W"]]),
     define_node("S", node_list[["S"]], c("W"), variable_type = variable_types[["S"]]),
-    define_node("T", node_list[["T"]], c("W"), variable_type = variable_types[["T"]]),
-    define_node("D", node_list[["D"]], variable_type = variable_types[["D"]]),
+    define_node("T.tilde", node_list[["T.tilde"]], c("W"), variable_type = variable_types[["T.tilde"]]),
+    define_node("Delta", node_list[["Delta"]], variable_type = variable_types[["Delta"]]),
     censoring,
     # TODO: remove t parent, handle in get_regression
-    define_node("F", node_list[["F"]], c("W"), variable_type = variable_types[["F"]], censoring_node=censoring),
-    define_node("C", node_list[["C"]], c("W"), variable_type = variable_types[["C"]], censoring_node=censoring)   
+    define_node("failed", node_list[["failed"]], c("W"), variable_type = variable_types[["failed"]], censoring_node=censoring),
+    define_node("censored", node_list[["censored"]], c("W"), variable_type = variable_types[["censored"]], censoring_node=censoring)   
   )
   
   return(npsem)
@@ -43,12 +43,12 @@ survival_e_npsem <- function(node_list, variable_types = NULL) {
     define_node("W", node_list[["W"]], variable_type = variable_types[["W"]]),
     define_node("S", node_list[["S"]], c("W"), variable_type = variable_types[["S"]]),
     define_node("A", node_list[["A"]], c("W"), variable_type = variable_types[["A"]]),
-    define_node("T", node_list[["T"]], c("A", "W"), variable_type = variable_types[["T"]]),
-    define_node("D", node_list[["D"]], variable_type = variable_types[["D"]]),
+    define_node("T.tilde", node_list[["T.tilde"]], c("A", "W"), variable_type = variable_types[["T.tilde"]]),
+    define_node("Delta", node_list[["Delta"]], variable_type = variable_types[["Delta"]]),
     censoring,
     # TODO: remove t parent, handle in get_regression
-    define_node("F", node_list[["F"]], c("A", "W"), variable_type = variable_types[["F"]], censoring_node=censoring),
-    define_node("C", node_list[["C"]], c("A", "W"), variable_type = variable_types[["C"]], censoring_node=censoring)   
+    define_node("failed", node_list[["failed"]], c("A", "W"), variable_type = variable_types[["failed"]], censoring_node=censoring),
+    define_node("censored", node_list[["censored"]], c("A", "W"), variable_type = variable_types[["censored"]], censoring_node=censoring)   
   )
   
   return(npsem)
@@ -93,10 +93,10 @@ survival_o_likelihood  <- function(tmle_task, learner_list) {
   # TODO: modify get_regression_task and LF_fit for time variance
   # TODO: whether need bound
   outcome_bound <- 0.025
-  F_factor <- define_lf(LF_fit_site, "F", learner = learner_list[["F"]],
+  F_factor <- define_lf(LF_fit_site, "failed", learner = learner_list[["failed"]],
                         is_time_variant = TRUE, bound = outcome_bound,
                         type = "mean")
-  C_factor <- define_lf(LF_fit_site, "C", learner = learner_list[["C"]],
+  C_factor <- define_lf(LF_fit_site, "censored", learner = learner_list[["censored"]],
                         is_time_variant = TRUE, bound = outcome_bound,
                         type = "mean")
   
@@ -139,10 +139,10 @@ survival_e_likelihood  <- function(tmle_task, learner_list) {
   # TODO: modify get_regression_task and LF_fit for time variance
   # TODO: whether need bound
   outcome_bound <- 0.025
-  F_factor <- define_lf(LF_fit_site, "F", learner = learner_list[["F"]],
+  F_factor <- define_lf(LF_fit_site, "failed", learner = learner_list[["failed"]],
                         is_time_variant = TRUE, bound = outcome_bound,
                         type = "mean")
-  C_factor <- define_lf(LF_fit_site, "C", learner = learner_list[["C"]],
+  C_factor <- define_lf(LF_fit_site, "censored", learner = learner_list[["censored"]],
                         is_time_variant = TRUE, bound = outcome_bound,
                         type = "mean")
   

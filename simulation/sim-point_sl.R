@@ -23,7 +23,6 @@ Y <- rnorm(n, -1 + .5 * W1 * sin(W3 + 8) + .2 * sqrt(abs(-W2^3 + exp(W2/(W3-3.5)
 
 data <- data.table(W1,W2,W3,S,Y)
 node_list <- list(W = c("W1", "W2", "W3"), S = "S", Y = "Y")
-W <- data[ ,colnames(data) %in% node_list$W, with=FALSE]
 
 data0 <- data[data[[node_list$S]] == 0, ]
 data1 <- data[data[[node_list$S]] == 1, ]
@@ -45,7 +44,6 @@ seed_fit = function(seed) {
   
   data <- data.table(W1,W2,W3,S,Y)
   node_list <- list(W = c("W1", "W2", "W3"), S = "S", Y = "Y")
-  W <- data[ ,colnames(data) %in% node_list$W, with=FALSE]
   
   data0 <- data[data[[node_list$S]] == 0, ]
   data1 <- data[data[[node_list$S]] == 1, ]
@@ -63,7 +61,7 @@ seed_fit = function(seed) {
   
   psi <- mean(psis)
   # delta method:
-  #se <- sqrt(deltaMeanOLS(W0, psis, beta_cov))
+  #se <- sqrt(deltaMeanOLS(WS0, psis, beta_cov))
   # by EIC:
   se <- sd(psis)/sqrt(length(psis))
   CI95 <- wald_ci(psi, se)

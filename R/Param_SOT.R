@@ -43,7 +43,7 @@ Param_SOT <- R6Class(
     initialize = function(observed_likelihood, target_times = NULL, 
                           onsite = 1, offsite = 0, 
                           fit_s_marginal = "empirical", ..., 
-                          outcome_node = "F") {
+                          outcome_node = "failed") {
       # TODO: check outcome_node, current I(T<=t, delta=1), need I(T=t, delta=1)
       private$.target_times <- target_times
       
@@ -78,11 +78,11 @@ Param_SOT <- R6Class(
       pS1W <- self$observed_likelihood$get_likelihood(cf_task_onsite, "S", fold_number)
       pS0W <- self$observed_likelihood$get_likelihood(cf_task_offsite, "S", fold_number)
       
-      hF <- self$observed_likelihood$get_likelihoods(tmle_task, "F", fold_number)
+      hF <- self$observed_likelihood$get_likelihoods(tmle_task, "failed", fold_number)
       # TODO: make bound configurable
       hF <- bound(hF, 0.005)
       
-      hC <- self$observed_likelihood$get_likelihoods(tmle_task, "C", fold_number)
+      hC <- self$observed_likelihood$get_likelihoods(tmle_task, "censored", fold_number)
       
       time <- tmle_task$time
       id <- tmle_task$id
@@ -111,7 +111,7 @@ Param_SOT <- R6Class(
       if(subset_times & !is.null(self$target_times)){
         H1[,!(ks%in%self$target_times)] = 0
       }
-      return(list(F = H1))
+      return(list(failed = H1))
     },
     clever_covariates = function(tmle_task, fold_number = "full"){
       self$clever_covariates_internal(tmle_task, fold_number, subset_times = TRUE)
@@ -146,8 +146,8 @@ Param_SOT <- R6Class(
       hFS1_mat <- long_to_mat(hFS1,id,time)
       sFS1_mat <- hm_to_sm(hFS1_mat)
       psi <- colMeans(IS0/pS0 * sFS1_mat)
-      T_tilde <- tmle_task$get_tmle_node("T")
-      Delta <- tmle_task$get_tmle_node("D")
+      T_tilde <- tmle_task$get_tmle_node("T.tilde")
+      Delta <- tmle_task$get_tmle_node("Delta")
       k <- time
       Fail <- (T_tilde == k) & (Delta == 1)
       ITk <- (T_tilde >= k)

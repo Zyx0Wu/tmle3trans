@@ -43,7 +43,7 @@ Param_SET <- R6Class(
     initialize = function(observed_likelihood, intervention, 
                           onsite = 1, offsite = 0, target_times = NULL, 
                           fit_s_marginal = "empirical", ..., 
-                          outcome_node = "F") {
+                          outcome_node = "failed") {
       # TODO: check outcome_node, current I(T<=t, delta=1), need I(T=t, delta=1)
       super$initialize(observed_likelihood, target_times, onsite, offsite, fit_s_marginal, ..., outcome_node = outcome_node)
       private$.intervention <- intervention

@@ -47,16 +47,16 @@ df_time = function(df, t_current, t_tilde="T.tilde", delta="Delta"){
 #' 
 #' @export
 transform_data = function(data, node_list) {
-  T_tilde_name <- node_list[["T"]]
-  Delta_name <- node_list[["D"]]
+  T_tilde_name <- node_list[["T.tilde"]]
+  Delta_name <- node_list[["Delta"]]
   T_tilde_data <- data[T_tilde_name]
   Delta_data <- data[Delta_name]
   k_grid <- 1:max(T_tilde_data)
   
   if (is.null(node_list$id)) {
     id <- 1:nrow(data)
-    data <- cbind(id=id, data)
-    node_list$id <- "id"
+    data <- cbind(ID=id, data)
+    node_list$id <- "ID"
   }
   
   all_times <- lapply(k_grid, function(t_current) df_time(data, t_current))
@@ -65,8 +65,8 @@ transform_data = function(data, node_list) {
   long_node_list <- copy(node_list)
   long_node_list$time <- "t"
   long_node_list$pre_failure <- "pre_failure"
-  long_node_list[["F"]] <- "F" 
-  long_node_list[["C"]] <- "C"
+  long_node_list$failed <- "Failed"
+  long_node_list$censored <- "Censored"
   
   return(list(long_data=df_long, long_node_list=long_node_list))
 }

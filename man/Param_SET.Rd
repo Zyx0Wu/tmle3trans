@@ -81,7 +81,7 @@ Other Parameters:
   target_times = NULL,
   fit_s_marginal = "empirical",
   ...,
-  outcome_node = "F"
+  outcome_node = "failed"
 )}\if{html}{\out{</div>}}
 }
 
