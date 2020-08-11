@@ -44,17 +44,19 @@ Param_AOT <- R6Class(
   inherit = Param_base,
   public = list(
     initialize = function(observed_likelihood, onsite = 1, offsite = 0, 
-                          fit_s_marginal = "empirical", ..., outcome_node = "Y") {
+                          fit_s_marginal = "empirical", ..., 
+                          site_node = "S", outcome_node = "Y") {
       super$initialize(observed_likelihood, ..., outcome_node = outcome_node)
       private$.onsite <- onsite
       private$.offsite <- offsite
+      private$.site_node <- site_node
       private$.fit_s_marginal <- fit_s_marginal
       private$.cf_likelihood_onsite <- 
         make_CF_Likelihood(observed_likelihood, 
-                           define_lf(LF_static, "S", value = self$onsite))
+                           define_lf(LF_static, self$site_node, value = self$onsite))
       private$.cf_likelihood_offsite <- 
         make_CF_Likelihood(observed_likelihood, 
-                           define_lf(LF_static, "S", value = self$offsite))
+                           define_lf(LF_static, self$site_node, value = self$offsite))
     },
     clever_covariates = function(tmle_task = NULL, fold_number = "full") {
       training_task <- self$observed_likelihood$training_task
@@ -62,20 +64,20 @@ Param_AOT <- R6Class(
         tmle_task <- self$observed_likelihood$training_task
       }
 
-      IS1 <- self$cf_likelihood_onsite$get_likelihoods(tmle_task, "S", fold_number)
+      IS1 <- self$cf_likelihood_onsite$get_likelihoods(tmle_task, self$site_node, fold_number)
 
       if (self$fit_s_marginal == "empirical") {
-        pS0 <- 1 - mean(training_task$get_tmle_node("S"))
+        pS0 <- 1 - mean(training_task$get_tmle_node(self$site_node))
       } else if (self$fit_s_marginal == "integral") {
         cf_train_offsite <- training_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$offsite, training_task$nrow)))
-        pS0 <- weighted.mean(self$observed_likelihood$get_likelihood(cf_train_offsite, "S", fold_number),
+        pS0 <- weighted.mean(self$observed_likelihood$get_likelihood(cf_train_offsite, self$site_node, fold_number),
                              self$observed_likelihood$get_likelihood(cf_train_offsite, "W", fold_number))
       }
       
       cf_task_onsite <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$onsite, tmle_task$nrow)))
       cf_task_offsite <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$offsite, tmle_task$nrow)))
-      pS1W <- self$observed_likelihood$get_likelihood(cf_task_onsite, "S", fold_number)
-      pS0W <- self$observed_likelihood$get_likelihood(cf_task_offsite, "S", fold_number)
+      pS1W <- self$observed_likelihood$get_likelihood(cf_task_onsite, self$site_node, fold_number)
+      pS0W <- self$observed_likelihood$get_likelihood(cf_task_offsite, self$site_node, fold_number)
       
       H1 <- IS1/pS1W * pS0W/pS0
       #H1 <- IS1/prob_clip(pS1W) * pS0W/prob_clip(pS0)
@@ -91,16 +93,16 @@ Param_AOT <- R6Class(
       H1 <- self$clever_covariates(tmle_task, fold_number)[[self$outcome_node]]
       Y <- tmle_task$get_tmle_node(self$outcome_node)
       EYS <- self$observed_likelihood$get_likelihood(tmle_task, self$outcome_node, fold_number)
-      IS0 <- self$cf_likelihood_offsite$get_likelihoods(tmle_task, "S", fold_number)
+      IS0 <- self$cf_likelihood_offsite$get_likelihoods(tmle_task, self$site_node, fold_number)
 
       cf_task_onsite <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$onsite, tmle_task$nrow)))
       EYS1 <- self$observed_likelihood$get_likelihood(cf_task_onsite, self$outcome_node, fold_number)
       
       if (self$fit_s_marginal == "empirical") {
-        pS0 <- 1 - mean(training_task$get_tmle_node("S"))
+        pS0 <- 1 - mean(training_task$get_tmle_node(self$site_node))
       } else if (self$fit_s_marginal == "integral") {
         cf_train_offsite <- training_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(S = rep(self$offsite, training_task$nrow)))
-        pS0 <- weighted.mean(self$observed_likelihood$get_likelihood(cf_train_offsite, "S", fold_number),
+        pS0 <- weighted.mean(self$observed_likelihood$get_likelihood(cf_train_offsite, self$site_node, fold_number),
                              self$observed_likelihood$get_likelihood(cf_train_offsite, "W", fold_number))
       }
       
@@ -125,6 +127,9 @@ Param_AOT <- R6Class(
     offsite = function() {
       return(private$.offsite)
     },
+    site_node = function() {
+      return(private$.site_node)
+    },
     fit_s_marginal = function() {
       return(private$.fit_s_marginal)
     },
@@ -139,6 +144,7 @@ Param_AOT <- R6Class(
     .type = "TMLE_AOT",
     .onsite = NULL,
     .offsite = NULL,
+    .site_node = NULL,
     .fit_s_marginal = NULL,
     .cf_likelihood_onsite = NULL,
     .cf_likelihood_offsite = NULL

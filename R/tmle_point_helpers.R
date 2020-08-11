@@ -107,7 +107,7 @@ point_e_likelihood <- function(tmle_task, learner_list) {
     A_bound <- NULL
   }
   
-  A_factor <- define_lf(LF_fit, "A", learner = learner_list[["A"]], bound = A_bound)
+  A_factor <- define_lf(LF_fit_site, "A", learner = learner_list[["A"]], bound = A_bound)
   
   # outcome
   Y_factor <- define_lf(LF_fit_site, "Y", learner = learner_list[["Y"]], type = "mean")

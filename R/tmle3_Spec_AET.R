@@ -36,6 +36,7 @@ tmle3_Spec_AET <- R6Class(
       } else {
         A_levels <- sort(unique(A_vals))
       }
+      
       tmle_params <- lapply(A_levels, function(A_level) {
         tmle_param <- define_param(Param_AET, likelihood, A_level,
                                    onsite = self$options$onsite,
@@ -43,7 +44,6 @@ tmle3_Spec_AET <- R6Class(
                                    fit_s_marginal = self$options$fit_s_marginal)
         return(tmle_param)
       })
-
       return(tmle_params)
     }
   ),

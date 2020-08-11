@@ -78,6 +78,7 @@ Other Parameters:
   offsite = 0,
   fit_s_marginal = "empirical",
   ...,
+  site_node = "S",
   outcome_node = "Y"
 )}\if{html}{\out{</div>}}
 }

@@ -14,9 +14,10 @@ tmle3_Spec_SET <- R6Class(
   class = TRUE,
   inherit = tmle3_Spec,
   public = list(
-    initialize = function(onsite = 1, offsite = 0, target_times = NULL, 
+    initialize = function(intervention, onsite = 1, offsite = 0, target_times = NULL, 
                           fit_s_marginal = "empirical", ...) {
-      super$initialize(onsite = onsite, offsite = offsite, 
+      super$initialize(intervention = intervention, 
+                       onsite = onsite, offsite = offsite, 
                        target_times = target_times,
                        fit_s_marginal = fit_s_marginal, ...)
     },
@@ -34,23 +35,12 @@ tmle3_Spec_SET <- R6Class(
     },
     
     make_params = function(tmle_task, likelihood) {
-      # todo: export and use sl3:::get_levels
-      A_vals <- tmle_task$get_tmle_node("A")
-      if (is.factor(A_vals)) {
-        A_levels <- levels(A_vals)
-        A_levels <- factor(A_levels, A_levels)
-      } else {
-        A_levels <- sort(unique(A_vals))
-      }
-      tmle_params <- lapply(A_levels, function(A_level) {
-        tmle_param <- define_param(Param_SET, likelihood, A_level,
-                                   onsite = self$options$onsite,
-                                   offsite = self$options$offsite,
-                                   target_times = self$options$target_times,
-                                   fit_s_marginal = self$options$fit_s_marginal)
-        return(tmle_param)
-      })
-      
+      tmle_params <- define_param(Param_SET, likelihood, 
+                                  intervention = self$options$intervention,
+                                  onsite = self$options$onsite,
+                                  offsite = self$options$offsite,
+                                  target_times = self$options$target_times,
+                                  fit_s_marginal = self$options$fit_s_marginal)
       return(tmle_params)
     }
   ),
@@ -64,9 +54,9 @@ tmle3_Spec_SET <- R6Class(
 #' @param onsite value for onsite
 #' @param offsite value for offsite
 #' @export
-tmle_SET <- function(onsite = 1, offsite = 0, target_times = NULL, 
+tmle_SET <- function(intervention, onsite = 1, offsite = 0, target_times = NULL, 
                      fit_s_marginal = "empirical", ...) {
-  tmle3_Spec_SET$new(onsite = onsite, offsite = offsite,
+  tmle3_Spec_SET$new(intervention, onsite = onsite, offsite = offsite,
                      target_times = target_times,
                      fit_s_marginal = fit_s_marginal, ...)
 }

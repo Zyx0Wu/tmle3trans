@@ -134,7 +134,7 @@ survival_e_likelihood  <- function(tmle_task, learner_list) {
   }
   
   S_factor <- define_lf(LF_fit, "S", learner = learner_list[["S"]], bound = S_bound)
-  A_factor <- define_lf(LF_fit, "A", learner = learner_list[["A"]], bound = A_bound)
+  A_factor <- define_lf(LF_fit_site, "A", learner = learner_list[["A"]], bound = A_bound)
   
   # TODO: modify get_regression_task and LF_fit for time variance
   # TODO: whether need bound

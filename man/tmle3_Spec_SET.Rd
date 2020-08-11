@@ -35,6 +35,7 @@ Defines a TMLE with Survival Effect Transportation
 \subsection{Method \code{new()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{tmle3_Spec_SET$new(
+  intervention,
   onsite = 1,
   offsite = 0,
   target_times = NULL,

@@ -56,6 +56,7 @@ Other Parameters:
 \itemize{
 \item \href{#method-new}{\code{Param_SET$new()}}
 \item \href{#method-clever_covariates_internal}{\code{Param_SET$clever_covariates_internal()}}
+\item \href{#method-estimates}{\code{Param_SET$estimates()}}
 \item \href{#method-clone}{\code{Param_SET$clone()}}
 }
 }
@@ -64,7 +65,6 @@ Other Parameters:
 \itemize{
 \item \out{<span class="pkg-link" data-pkg="tmle3" data-topic="Param_base" data-id="print">}\href{../../tmle3/html/Param_base.html#method-print}{\code{tmle3::Param_base$print()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="tmle3trans" data-topic="Param_SOT" data-id="clever_covariates">}\href{../../tmle3trans/html/Param_SOT.html#method-clever_covariates}{\code{tmle3trans::Param_SOT$clever_covariates()}}\out{</span>}
-\item \out{<span class="pkg-link" data-pkg="tmle3trans" data-topic="Param_SOT" data-id="estimates">}\href{../../tmle3trans/html/Param_SOT.html#method-estimates}{\code{tmle3trans::Param_SOT$estimates()}}\out{</span>}
 }
 \out{</details>}
 }
@@ -81,6 +81,7 @@ Other Parameters:
   target_times = NULL,
   fit_s_marginal = "empirical",
   ...,
+  intervention_node = "A",
   outcome_node = "failed"
 )}\if{html}{\out{</div>}}
 }
@@ -96,6 +97,15 @@ Other Parameters:
   fold_number = "full",
   subset_times = FALSE
 )}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-estimates"></a>}}
+\if{latex}{\out{\hypertarget{method-estimates}{}}}
+\subsection{Method \code{estimates()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Param_SET$estimates(tmle_task = NULL, fold_number = "full")}\if{html}{\out{</div>}}
 }
 
 }

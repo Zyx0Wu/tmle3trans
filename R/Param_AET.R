@@ -42,27 +42,42 @@ Param_AET <- R6Class(
     initialize = function(observed_likelihood, intervention, 
                           onsite = 1, offsite = 0,
                           fit_s_marginal = "empirical", ...,
-                          outcome_node = "Y") {
+                          intervention_node = "A", outcome_node = "Y") {
       super$initialize(observed_likelihood, onsite, offsite, fit_s_marginal, 
                        ..., outcome_node = outcome_node)
       private$.intervention <- intervention
+      private$.intervention_node <- intervention_node
       private$.cf_likelihood_intervention <- 
         make_CF_Likelihood(observed_likelihood, 
-                           define_lf(LF_static, "A", value = self$intervention))
+                           define_lf(LF_static, self$intervention_node, value = self$intervention))
     },
     clever_covariates = function(tmle_task = NULL, fold_number = "full") {
+      S <- tmle_task$get_tmle_node(self$site_node)
+      A_trans <- tmle_task$get_tmle_node(self$intervention_node)
+      A_trans[S == self$offsite] <- self$intervention
+      
+      tmle_task <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(A = A_trans))
+      
       base_covs <- super$clever_covariates(tmle_task, fold_number)
       
       if (is.null(tmle_task)) {
         tmle_task <- self$observed_likelihood$training_task
       }
       
-      pA <- self$observed_likelihood$get_likelihoods(tmle_task, "A", fold_number)
-      IA <- self$cf_likelihood_intervention$get_likelihoods(tmle_task, "A", fold_number)
+      pA <- self$observed_likelihood$get_likelihoods(tmle_task, self$intervention_node, fold_number)
+      IA <- self$cf_likelihood_intervention$get_likelihoods(tmle_task, self$intervention_node, fold_number)
       
       clever_covs <- lapply(base_covs, `*`, IA/pA)
       #clever_covs <- lapply(base_covs, `*`, IA/prob_clip(pA))
       return(clever_covs)
+    },
+    estimates = function(tmle_task = NULL, fold_number = "full") {
+      S <- tmle_task$get_tmle_node(self$site_node)
+      A_trans <- tmle_task$get_tmle_node(self$intervention_node)
+      A_trans[S == self$offsite] <- self$intervention
+      
+      tmle_task <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = data.table(A = A_trans))
+      return(super$estimates(tmle_task, fold_number))
     }
   ),
   active = list(
@@ -77,6 +92,9 @@ Param_AET <- R6Class(
     intervention = function() {
       return(private$.intervention)
     },
+    intervention_node = function() {
+      return(private$.intervention_node)
+    },
     cf_likelihood_intervention = function() {
       return(private$.cf_likelihood_intervention)
     }
@@ -84,6 +102,7 @@ Param_AET <- R6Class(
   private = list(
     .type = "TMLE_AET",
     .intervention = NULL,
+    .intervention_node = NULL,
     .cf_likelihood_intervention = NULL
   )
 )

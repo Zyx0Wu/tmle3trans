@@ -47,7 +47,7 @@ Qpop = mutate(W, Q = -1 - .5 * W1 +
                 .8 * W2 + .2 * W3 + bias * n^(-0.3))$Q
 Qpop
 PSpop = mutate(W, g=prob_clip(expit(1.4 - 0.6 * W1 - 2 * W2 +
-                                    0.7 * W3 + bias * n^(-0.3))))$g
+                                      0.7 * W3 + bias * n^(-0.3))))$g
 PSpop
 Psi0
 
@@ -69,35 +69,35 @@ simJL = function(n, biasS, biasY, wt=TRUE) {
   # wt=T
   data = gendata_trans(n)
   node_list <- list(W = c("W1", "W2", "W3"), S = "S", Y = "Y")
-
+  
   W <- select(data, node_list$W)
-
+  
   s_dens <- function(w, bias=FALSE, n) prob_clip(expit(1.4 - 0.6 * w[1] - 2 * w[2] + 0.7 * w[3] + bias * n^(-0.3)))
   y_dens <- function(w, bias=FALSE, n) -1 - .5 * w[1] +
     .8 * w[2] + .2 * w[3] + bias * n^(-0.3)
-
+  
   ### 1. Naive ###
   # note: not Plug-In
   Q = apply(W, 1, y_dens, bias = biasY, n = n)
-
+  
   S = data$S
   Y = data$Y
-
+  
   ### 2. IPTW ###
   pS1W <- apply(W, 1, s_dens,n=n, bias=biasS)
-
+  
   pS0W <- 1 - pS1W
   #pS0 <- mean(data$S==0)
   pS0 <- 1 - mean(pS1W)
-
+  
   H1 = S*pS0W/(pS0*pS1W)
-
+  
   iptw_psi_init <- mean(H1*Y)
   iptw_psi = iptw_psi_init/(mean(H1))
   iptw_se <- sd(H1*(Y-iptw_psi_init))/sqrt(n)
   iptw_CI95 <- c(iptw_psi, iptw_psi - 1.96*iptw_se, iptw_psi + 1.96*iptw_se)
   iptw_CI95
-
+  
   ### 3. TML ###
   
   #tmle_psi_init = mean(Q[S==0])
@@ -112,18 +112,18 @@ simJL = function(n, biasS, biasY, wt=TRUE) {
                   family = gaussian)
     Qstar = tmlefit$coefficients*pS0W/(mean(1-S)*pS1W)+Q
   }
-
+  
   D = S*pS0W/(mean(1-S)*pS1W)*(Y-Qstar) +
     (1-S)/mean(1-S)*(Qstar-mean(Qstar[S==0]))
-
+  
   mean(D)
-
+  
   #tmlejl_psi = mean(Qstar[S==0])
   tmlejl_psi = mean((S == 0)/pS0 * Qstar)
   tmle_psi_init
   tmlejl_psi
   tmlejl_se <- sd(D)/sqrt(n)
-
+  
   tmlejl_CI95 <- c(tmlejl_psi, tmlejl_psi - 1.96*tmlejl_se, tmlejl_psi + 1.96*tmlejl_se)
   tmlejl_CI95
   
@@ -167,7 +167,7 @@ simJL = function(n, biasS, biasY, wt=TRUE) {
   tmle_CI95 <- wald_ci(tmle_psi, tmle_se)
   browser()
   
-
+  
   return(list(tmle =  tmle_CI95,
               iptw = iptw_CI95,
               naive_psi_init = tmle_psi_init))
@@ -182,7 +182,7 @@ res = foreach(i=1:B, .errorhandling = "remove") %do%
   simJL(n,T,T,T)
 
 getres = function(res) {
-
+  
   res = do.call(rbind,lapply(res, function(L) unlist(L)))
   res = data.frame(res)
   head(res)
@@ -190,15 +190,15 @@ getres = function(res) {
   tmleeff = mean((res$tmle3- res$tmle2)/(2*1.96)/se0_n)
   iptwcov = mean(res$iptw2 <= Psi0 & res$iptw3 >= Psi0)
   iptweff = mean((res$iptw3- res$iptw2)/(2*1.96)/se0_n)
-
+  
   coverage = c(tmle = tmlecov,iptw = iptwcov)
   efficiency = c(tmle = tmleeff, iptw = iptweff)
   cov_eff = rbind(coverage, efficiency)
   cov_eff
-
+  
   mse = apply(res[,c(1,4,7)], 2, function(x) mean((x-Psi0)^2))
   mse
-
+  
   ests = unlist(res[,c(1,4,7)])
   names(ests) = NULL
   ests
@@ -221,4 +221,3 @@ sampling_dists = ggplot(results$plotdf, aes(x=ests, fill = type))+
   xlim(-1.3,-.4)
 
 sampling_dists
-

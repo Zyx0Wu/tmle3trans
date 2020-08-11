@@ -5,6 +5,7 @@
 \title{Wrapper}
 \usage{
 tmle_SET(
+  intervention,
   onsite = 1,
   offsite = 0,
   target_times = NULL,

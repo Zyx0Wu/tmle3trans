@@ -52,6 +52,7 @@ Other Parameters:
 \itemize{
 \item \href{#method-new}{\code{Param_AET$new()}}
 \item \href{#method-clever_covariates}{\code{Param_AET$clever_covariates()}}
+\item \href{#method-estimates}{\code{Param_AET$estimates()}}
 \item \href{#method-clone}{\code{Param_AET$clone()}}
 }
 }
@@ -59,7 +60,6 @@ Other Parameters:
 \out{<details open ><summary>Inherited methods</summary>}
 \itemize{
 \item \out{<span class="pkg-link" data-pkg="tmle3" data-topic="Param_base" data-id="print">}\href{../../tmle3/html/Param_base.html#method-print}{\code{tmle3::Param_base$print()}}\out{</span>}
-\item \out{<span class="pkg-link" data-pkg="tmle3trans" data-topic="Param_AOT" data-id="estimates">}\href{../../tmle3trans/html/Param_AOT.html#method-estimates}{\code{tmle3trans::Param_AOT$estimates()}}\out{</span>}
 }
 \out{</details>}
 }
@@ -75,6 +75,7 @@ Other Parameters:
   offsite = 0,
   fit_s_marginal = "empirical",
   ...,
+  intervention_node = "A",
   outcome_node = "Y"
 )}\if{html}{\out{</div>}}
 }
@@ -86,6 +87,15 @@ Other Parameters:
 \subsection{Method \code{clever_covariates()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Param_AET$clever_covariates(tmle_task = NULL, fold_number = "full")}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-estimates"></a>}}
+\if{latex}{\out{\hypertarget{method-estimates}{}}}
+\subsection{Method \code{estimates()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Param_AET$estimates(tmle_task = NULL, fold_number = "full")}\if{html}{\out{</div>}}
 }
 
 }

@@ -48,6 +48,14 @@ logit <- function(x) {
 }
 
 
+#' Remove Value from Vector
+#'
+#' @export
+ditch = function(value, vector) {
+  return(vector[!(vector %in% value)])
+}
+
+
 #' Standard Error: Mean of Logistic Regression
 #'
 #' @param x covariates

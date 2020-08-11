@@ -103,7 +103,7 @@ tmle_fit <- fit_tmle3(tmle_task, targeted_likelihood, tmle_param, updater)
 
 # extract results
 tmle_summary <- tmle_fit$summary
-sl_psi <- tmle_summary$init_est
+init_psi <- tmle_summary$init_est
 tmle_psi <- tmle_summary$tmle_est
 tmle_se <- tmle_summary$se
 tmle_epsilon <- updater$epsilons[[1]]$Y

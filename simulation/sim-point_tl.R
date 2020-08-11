@@ -142,7 +142,7 @@ seed_fit = function(seed) {
   
   tmle_CI95 <- wald_ci(tmle_psi, tmle_se)
   
-  # MSE, coverage
+  # loss
   l2_diff_plugin <- (plugin_psi - mean)^2
   l2_diff_nonpar <- (nonpar_psi - mean)^2
   l2_diff_sl <- (sl_psi - mean)^2

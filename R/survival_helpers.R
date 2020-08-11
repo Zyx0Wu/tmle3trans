@@ -59,7 +59,7 @@ transform_data = function(data, node_list) {
     node_list$id <- "ID"
   }
   
-  all_times <- lapply(k_grid, function(t_current) df_time(data, t_current))
+  all_times <- lapply(k_grid, function(t_current) df_time(data, t_current, T_tilde_name, Delta_name))
   df_long <- rbindlist(all_times)
   
   long_node_list <- copy(node_list)
