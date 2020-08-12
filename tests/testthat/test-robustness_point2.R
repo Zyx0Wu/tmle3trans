@@ -18,53 +18,95 @@ gendata_trans = function(n) {
   data
 }
 
-### fit ###
-s_dens <- function(w, bias=FALSE) expit(1.4 - 0.6 * w[1] - 2 * w[2] + 0.7 * w[3] + bias * n^(-0.4))
-y_dens <- function(w, bias=FALSE) -1 - .5 * w[1] + .8 * w[2] + .2 * w[3] + bias * n^(-0.4)
+n <- 1000
+biasS <- TRUE
+biasY <- TRUE
+wt <- TRUE
+seed <- NULL
 
-fit_s <- function(W, bias=TRUE) apply(W, 1, s_dens, bias=bias)
-fit_y <- function(W, bias=TRUE) apply(W, 1, y_dens, bias=bias)
+if (!is.null(seed)) {set.seed(seed)}
 
-### data ###
-set.seed(1234)
-n <- 1e3
-data = gendata_trans(n)
+data <- gendata_trans(n)
 node_list <- list(W = c("W1", "W2", "W3"), S = "S", Y = "Y")
 
-W <- data[ ,colnames(data) %in% node_list$W, with=FALSE]
+W <- select(data, node_list$W)
 
-### 1. Naive ###
-EYW <- fit_y(W)
-IS0 <- data$S == 0
-pS0 <- mean(data$S == 0)
+data0 <- filter(data, S==0)
+data1 <- filter(data, S==1)
 
-naive_psis <- IS0/pS0 * EYW
+### fit ###
+WS1 <- select(data1, node_list$W)
+YS1 <- data1$Y
+WS0 <- select(data0, node_list$W)
 
-naive_psi <- mean(naive_psis)
-naive_se <- sd(naive_psis)/sqrt(n)
-naive_CI95 <- wald_ci(naive_psi, naive_se)
+s_dens <- function(w, bias=FALSE, n)
+  prob_clip(expit(1.4 - 0.6 * w[1] - 2 * w[2] + 0.7 * w[3] +
+                    bias * n^(-0.3)))
+y_dens <- function(w, bias=FALSE, n) -1 - .5 * w[1] +
+  .8 * w[2] + .2 * w[3] + bias * n^(-0.3)
 
-### 2. IPTW ###
-pS1W <- fit_s(W)
-IS1 <- data$S == 1
+### 1. Plug-In ###
+Q <- apply(W, 1, y_dens, bias = biasY, n = n)
+pS0 <- mean(data$S==0)
+
+S <- data$S
+Y <- data$Y
+
+H <- (1-S)/pS0
+
+plugin_psi <- mean(H*Q)
+plugin_se <- sd(H*(Q-plugin_psi))/sqrt(n)
+
+### 2. IPTW & S-IPTW ###
+pS1W <- apply(W, 1, s_dens,n=n, bias=T)
+
 pS0W <- 1 - pS1W
-pS0 <- mean(data$S == 0)
 
-iptw_psis <- IS1/pS1W * pS0W/pS0 * data$Y
+H1 <- S*pS0W/(pS0*pS1W)
 
-iptw_psi <- mean(iptw_psis)
-iptw_se <- sd(iptw_psis)/sqrt(n)
-iptw_CI95 <- wald_ci(iptw_psi, iptw_se)
+iptw_psi <- mean(H1*Y)
+iptw_se <- sd(H1*(Y-iptw_psi))/sqrt(n)
 
+siptw_psi <- iptw_psi/(mean(H1))
+siptw_se <- sd(H1/mean(H1)*(Y-siptw_psi))/sqrt(n)
+'
 ### 3. TML ###
-tmle_spec <- tmle_AOT(1, 0)
+
+tmle_psi_init = mean(Q[S==0])
+
+if (wt) {
+  tmlefit = glm(Y[S==1]~1+offset(Q[S==1]),
+                family = gaussian, weights=H1[S==1])
+  Qstar = Q+ tmlefit$coefficients
+} else {
+  tmlefit = glm(Y[S==1]~-1+H1[S==1] + offset(Q[S==1]),
+                family = gaussian)
+  Qstar = tmlefit$coefficients*pS0W/(mean(1-S)*pS1W)+Q
+}
+
+D = S*pS0W/(mean(1-S)*pS1W)*(Y-Qstar) +
+  (1-S)/mean(1-S)*(Qstar-mean(Qstar[S==0]))
+
+mean(D)
+
+tmle_psi = mean(Qstar[S==0])
+tmle_psi_init
+tmle_psi
+tmle_se <- sd(D)/sqrt(n)
+
+tmle_CI95 <- c(tmle_psi, tmle_psi - 1.96*tmle_se, tmle_psi + 1.96*tmle_se)
+tmle_CI95
+'
+### 4. TML3 ###
+
+tmle3_spec <- tmle_AOT(1, 0)
 
 # define data
-tmle_task <- tmle_spec$make_tmle_task(data, node_list)
+tmle3_task <- tmle3_spec$make_tmle_task(data, node_list)
 
 # define likelihood
-g_dens <- function(task) apply(task$get_node("covariates"), 1, s_dens, bias=TRUE)
-Q_mean <- function(task) apply(task$get_node("covariates"), 1, y_dens, bias=TRUE)
+g_dens <- function(task) apply(task$get_node("covariates"), 1, s_dens, bias=TRUE, n)
+Q_mean <- function(task) apply(task$get_node("covariates"), 1, y_dens, bias=TRUE, n)
 
 factor_list <- list(
   define_lf(LF_emp, "W"),
@@ -73,24 +115,21 @@ factor_list <- list(
 )
 
 # estimate likelihood
-initial_likelihood <- Likelihood$new(factor_list)$train(tmle_task)
+initial_likelihood <- Likelihood$new(factor_list)$train(tmle3_task)
 
 # define update method (submodel + loss function)
-updater <- tmle3_Update$new()
+updater <- tmle3_Update$new(maxit = 10)
 targeted_likelihood <- Targeted_Likelihood$new(initial_likelihood, updater)
 
 # define parameter
-tmle_param <- tmle_spec$make_params(tmle_task, targeted_likelihood)
+tmle3_param <- tmle3_spec$make_params(tmle3_task, targeted_likelihood)
 
 # fit
-tmle_fit <- fit_tmle3(tmle_task, targeted_likelihood, tmle_param, updater)
+tmle3_fit <- fit_tmle3(tmle3_task, targeted_likelihood, tmle3_param, updater)
 
 # extract results
-tmle_summary <- tmle_fit$summary
-sl_psi <- tmle_summary$init_est
-tmle_psi <- tmle_summary$tmle_est
-tmle_se <- tmle_summary$se
-tmle_epsilon <- updater$epsilons[[1]]$Y
-
-tmle_CI95 <- wald_ci(tmle_psi, tmle_se)
+tmle3_summary <- tmle3_fit$summary
+sl_psi <- tmle3_summary$init_est
+tmle3_psi <- tmle3_summary$tmle_est
+tmle3_se <- tmle3_summary$se
 
