@@ -2,6 +2,7 @@ library(simcausal)
 library(testthat)
 library(data.table)
 library(ggplot2)
+library(pammtools)
 
 library(sl3)
 library(tmle3)
@@ -142,4 +143,41 @@ for (i in 1:reps) {
   diff_sl <- cbind(diff_sl, fits[[3]])
   diff_tl <- cbind(diff_tl, fits[[4]])
 }
+'
+psis_df <- data.frame(time=0:max_time,
+                      sl=c(1,apply(sl_psis, 1, mean)),
+                      sl_upper=c(1,apply(sl_psis, 1, mean)+apply(sl_psis, 1, sd)),
+                      sl_lower=c(1,apply(sl_psis, 1, mean)-apply(sl_psis, 1, sd)),
+                      tl_10=c(1,apply(tl_psis_10, 1, mean)),
+                      tl_10_upper=c(1,apply(tl_psis_10, 1, mean)+apply(tl_psis_10, 1, sd)),
+                      tl_10_lower=c(1,apply(tl_psis_10, 1, mean)-apply(tl_psis_10, 1, sd)),
+                      tl_30=c(1,apply(tl_psis_30, 1, mean)),
+                      tl_30_upper=c(1,apply(tl_psis_30, 1, mean)+apply(tl_psis_30, 1, sd)),
+                      tl_30_lower=c(1,apply(tl_psis_30, 1, mean)-apply(tl_psis_30, 1, sd)),
+                      tl_100=c(1,apply(tl_psis_100, 1, mean)),
+                      tl_100_upper=c(1,apply(tl_psis_100, 1, mean)+apply(tl_psis_100, 1, sd)),
+                      tl_100_lower=c(1,apply(tl_psis_100, 1, mean)-apply(tl_psis_100, 1, sd)),
+                      truth=c(1,sF))
 
+plt_step <- ggplot(data=psis_df, aes(time)) + 
+  #geom_stepribbon(aes(ymin=sl_lower, ymax=sl_upper), fill = "grey") + 
+  #geom_stepribbon(aes(ymin=tl_100_lower, ymax=tl_100_upper), fill = "grey") + 
+  geom_step(aes(y=sl), color="red", alpha=0.8) + 
+  geom_step(aes(y=tl_100), color="orange", alpha=0.8) + 
+  geom_step(aes(y=truth), color="blue", alpha=0.8) + 
+  ylab("survival")
+
+plt_line <- ggplot(data=data.frame(step=1:99, ic=ic_step)) +
+  geom_line(aes(x=step, y=ic)) + 
+  ylab("validation ic")
+
+plt_line <- ggplot(data=data.frame(time=1:5, 
+                                   mse_10=apply((tl_psis_10-sF)^2, 1, mean)[1:5], 
+                                   mse_30=apply((tl_psis_30-sF)^2, 1, mean)[1:5], 
+                                   mse_100=apply((tl_psis_100-sF)^2, 1, mean)[1:5])) +
+  geom_line(aes(x=time, y=mse_10), color="green") + 
+  geom_line(aes(x=time, y=mse_30), color="brown") + 
+  geom_line(aes(x=time, y=mse_100), color="purple") + 
+  ylab("mse")
+'
+  

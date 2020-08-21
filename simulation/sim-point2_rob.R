@@ -213,6 +213,7 @@ dat_psis <- data.frame(Method=rep(c("Plug-In", "IPTW", "S-IPTW", "TML"), each=re
 mu <- ddply(dat_psis, "Method", summarise, grp.mean=mean(Estimator))
 plt_hist <- ggplot(dat_psis, aes(x=Estimator, color=Method)) +
   geom_histogram(fill="white", position="dodge") +
+  geom_density(alpha=.2, fill="#FF6666") + 
   geom_vline(data=mu, aes(xintercept=grp.mean, color=Method),
              linetype="dashed") +
   geom_vline(aes(xintercept=Psi0, color='Truth'))
